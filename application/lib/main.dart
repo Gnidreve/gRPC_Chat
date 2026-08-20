@@ -12,7 +12,7 @@ class ChatApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Chat',
+      title: 'Proximity Chat',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       home: const AppGate(),
