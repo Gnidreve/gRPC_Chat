@@ -29,6 +29,20 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        // A fixed, committed debug keystore (not the AGP-generated default,
+        // which is created fresh per machine — every GitHub Actions runner
+        // starts clean, so CI builds using the default would each get a
+        // different signature and Android would refuse to install one as
+        // an "update" over another).
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
