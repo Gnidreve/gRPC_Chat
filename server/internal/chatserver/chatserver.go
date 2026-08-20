@@ -1,9 +1,10 @@
 // Package chatserver implements the chat.v1.ChatService gRPC contract on
-// top of an in-memory store.Store.
+// top of a store.Store.
 package chatserver
 
 import (
 	"context"
+	"errors"
 	"math"
 
 	"google.golang.org/grpc/codes"
@@ -36,17 +37,23 @@ func (s *Server) Join(_ context.Context, req *chatv1.JoinRequest) (*chatv1.JoinR
 
 // SendMessage appends a message from the requesting user and broadcasts it
 // to subscribers.
-func (s *Server) SendMessage(_ context.Context, req *chatv1.SendMessageRequest) (*chatv1.SendMessageResponse, error) {
-	msg, err := s.store.AddMessage(req.GetUserId(), req.GetText())
+func (s *Server) SendMessage(ctx context.Context, req *chatv1.SendMessageRequest) (*chatv1.SendMessageResponse, error) {
+	msg, err := s.store.AddMessage(ctx, req.GetUserId(), req.GetText())
 	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
+		if errors.Is(err, store.ErrUnknownUser) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Unavailable, "failed to store message")
 	}
 	return &chatv1.SendMessageResponse{Message: toProtoMessage(msg)}, nil
 }
 
 // Subscribe streams message history followed by live events to the caller.
 func (s *Server) Subscribe(_ *chatv1.SubscribeRequest, stream chatv1.ChatService_SubscribeServer) error {
-	history, events, unsubscribe := s.store.Subscribe()
+	history, events, unsubscribe, err := s.store.Subscribe(stream.Context())
+	if err != nil {
+		return status.Error(codes.Unavailable, "failed to load message history")
+	}
 	defer unsubscribe()
 
 	// Send headers now that the subscription is registered with the store,

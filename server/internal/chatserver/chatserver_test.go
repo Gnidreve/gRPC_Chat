@@ -20,7 +20,7 @@ func TestJoinSendSubscribe(t *testing.T) {
 	t.Cleanup(func() { _ = lis.Close() })
 
 	grpcServer := grpc.NewServer()
-	chatv1.RegisterChatServiceServer(grpcServer, New(store.New()))
+	chatv1.RegisterChatServiceServer(grpcServer, New(store.New(store.NewMemoryHistory())))
 	go func() { _ = grpcServer.Serve(lis) }()
 	t.Cleanup(grpcServer.Stop)
 
@@ -95,7 +95,7 @@ func TestSubscribeReplaysHistoryBeforeLiveEvents(t *testing.T) {
 	t.Cleanup(func() { _ = lis.Close() })
 
 	grpcServer := grpc.NewServer()
-	chatv1.RegisterChatServiceServer(grpcServer, New(store.New()))
+	chatv1.RegisterChatServiceServer(grpcServer, New(store.New(store.NewMemoryHistory())))
 	go func() { _ = grpcServer.Serve(lis) }()
 	t.Cleanup(grpcServer.Stop)
 

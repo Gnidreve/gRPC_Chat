@@ -1,13 +1,15 @@
-// Package store holds the chat room state in memory: users and the
-// message history. It is deliberately simple — a single mutex-guarded
-// struct — so it can later be swapped for a Redis-backed implementation
-// without touching the gRPC layer.
+// Package store holds the chat room state: users, presence and live
+// broadcast stay in-memory (a single mutex-guarded struct); message history
+// is delegated to a History implementation so it can survive process
+// restarts (see history_redis.go) without the rest of the store caring.
 package store
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -16,10 +18,9 @@ import (
 // never joined (or was evicted).
 var ErrUnknownUser = errors.New("store: unknown user")
 
-// maxHistory bounds in-memory message retention so a long-running server
-// doesn't grow s.messages without limit. Once exceeded, the oldest messages
-// are dropped; connected clients keep them, only a fresh Subscribe() loses
-// the tail end of very old history.
+// maxHistory bounds message retention so it doesn't grow without limit.
+// Once exceeded, the oldest messages are dropped; connected clients keep
+// them, only a fresh Subscribe() loses the tail end of very old history.
 const maxHistory = 500
 
 // User is a chat participant: a server-assigned id, plus a nickname and
@@ -44,20 +45,32 @@ type Event struct {
 	OnlineCount *int
 }
 
-// Store is the in-memory chat room: known users, message history, and the
-// live subscribers currently streaming events.
+// History persists the message log. AddMessage/Subscribe delegate to it
+// instead of holding messages in the Store itself, so storage backend and
+// live presence/broadcast state can evolve independently.
+type History interface {
+	// Append adds msg to the end of the history.
+	Append(ctx context.Context, msg Message) error
+	// All returns the full retained history, oldest first.
+	All(ctx context.Context) ([]Message, error)
+}
+
+// Store is the chat room: known users, live subscribers, and a pluggable
+// message History.
 type Store struct {
 	mu          sync.RWMutex
 	users       map[string]User
-	messages    []Message
 	subscribers map[string]chan Event
+
+	history History
 }
 
-// New returns an empty Store ready to accept Join/AddMessage/Subscribe calls.
-func New() *Store {
+// New returns an empty Store backed by the given History.
+func New(history History) *Store {
 	return &Store{
 		users:       make(map[string]User),
 		subscribers: make(map[string]chan Event),
+		history:     history,
 	}
 }
 
@@ -82,21 +95,25 @@ func (s *Store) Join(id, nickname, color string) User {
 
 // AddMessage appends a message from userID to the history and delivers it
 // to every active subscriber. Returns ErrUnknownUser if userID never joined.
-func (s *Store) AddMessage(userID, text string) (Message, error) {
-	s.mu.Lock()
+func (s *Store) AddMessage(ctx context.Context, userID, text string) (Message, error) {
+	s.mu.RLock()
 	user, ok := s.users[userID]
+	s.mu.RUnlock()
 	if !ok {
-		s.mu.Unlock()
 		return Message{}, ErrUnknownUser
 	}
 
 	msg := Message{User: user, Text: text, SentAt: time.Now()}
-	s.messages = append(s.messages, msg)
-	if len(s.messages) > maxHistory {
-		s.messages = s.messages[len(s.messages)-maxHistory:]
+	// Persist before broadcasting: a subscriber must never see a live event
+	// for a message that then turns out to be missing from history on
+	// reconnect.
+	if err := s.history.Append(ctx, msg); err != nil {
+		return Message{}, fmt.Errorf("append message to history: %w", err)
 	}
+
+	s.mu.RLock()
 	recipients := s.recipientsLocked()
-	s.mu.Unlock()
+	s.mu.RUnlock()
 
 	broadcast(recipients, Event{Message: &msg})
 	return msg, nil
@@ -107,11 +124,13 @@ func (s *Store) AddMessage(userID, text string) (Message, error) {
 // the full message history so far, a channel that receives every event
 // from this point on, and an unsubscribe func that must be called once the
 // caller stops reading.
-func (s *Store) Subscribe() ([]Message, <-chan Event, func()) {
-	s.mu.Lock()
-	history := make([]Message, len(s.messages))
-	copy(history, s.messages)
+func (s *Store) Subscribe(ctx context.Context) ([]Message, <-chan Event, func(), error) {
+	history, err := s.history.All(ctx)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("load message history: %w", err)
+	}
 
+	s.mu.Lock()
 	id := newID()
 	ch := make(chan Event, 32)
 	s.subscribers[id] = ch
@@ -133,7 +152,7 @@ func (s *Store) Subscribe() ([]Message, <-chan Event, func()) {
 
 		broadcast(recipients, Event{OnlineCount: &count})
 	}
-	return history, ch, unsubscribe
+	return history, ch, unsubscribe, nil
 }
 
 // OnlineCount returns the current number of active Subscribe streams. Safe
@@ -145,7 +164,7 @@ func (s *Store) OnlineCount() int {
 }
 
 // recipientsLocked snapshots the current subscriber channels. Callers must
-// hold s.mu.
+// hold s.mu (for reading or writing).
 func (s *Store) recipientsLocked() []chan Event {
 	recipients := make([]chan Event, 0, len(s.subscribers))
 	for _, ch := range s.subscribers {

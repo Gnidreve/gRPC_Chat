@@ -1,14 +1,20 @@
 package store
 
 import (
+	"context"
 	"errors"
 	"testing"
 )
 
+func newTestStore(t *testing.T) *Store {
+	t.Helper()
+	return New(NewMemoryHistory())
+}
+
 func TestJoinKeepsClientChosenNicknameAndColor(t *testing.T) {
 	t.Parallel()
 
-	s := New()
+	s := newTestStore(t)
 
 	a := s.Join("", "Mara", "#12B76A")
 	b := s.Join("", "Jonas", "#F04438")
@@ -27,7 +33,7 @@ func TestJoinKeepsClientChosenNicknameAndColor(t *testing.T) {
 func TestJoinReusesClientProvidedID(t *testing.T) {
 	t.Parallel()
 
-	s := New()
+	s := newTestStore(t)
 
 	first := s.Join("device-abc", "Mara", "#12B76A")
 	if first.ID != "device-abc" {
@@ -44,9 +50,9 @@ func TestJoinReusesClientProvidedID(t *testing.T) {
 func TestAddMessageUnknownUser(t *testing.T) {
 	t.Parallel()
 
-	s := New()
+	s := newTestStore(t)
 
-	if _, err := s.AddMessage("does-not-exist", "hi"); !errors.Is(err, ErrUnknownUser) {
+	if _, err := s.AddMessage(context.Background(), "does-not-exist", "hi"); !errors.Is(err, ErrUnknownUser) {
 		t.Fatalf("expected ErrUnknownUser, got %v", err)
 	}
 }
@@ -54,16 +60,19 @@ func TestAddMessageUnknownUser(t *testing.T) {
 func TestSubscribeReceivesMessage(t *testing.T) {
 	t.Parallel()
 
-	s := New()
+	s := newTestStore(t)
 	user := s.Join("", "Mara", "#12B76A")
 
-	_, events, unsubscribe := s.Subscribe()
+	_, events, unsubscribe, err := s.Subscribe(context.Background())
+	if err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
 	defer unsubscribe()
 
 	// The subscriber's own join broadcasts a presence event; drain it.
 	<-events
 
-	if _, err := s.AddMessage(user.ID, "hey"); err != nil {
+	if _, err := s.AddMessage(context.Background(), user.ID, "hey"); err != nil {
 		t.Fatalf("AddMessage: %v", err)
 	}
 
@@ -82,14 +91,17 @@ func TestSubscribeReceivesMessage(t *testing.T) {
 func TestSubscribeReplaysHistory(t *testing.T) {
 	t.Parallel()
 
-	s := New()
+	s := newTestStore(t)
 	user := s.Join("", "Mara", "#12B76A")
 
-	if _, err := s.AddMessage(user.ID, "before subscribing"); err != nil {
+	if _, err := s.AddMessage(context.Background(), user.ID, "before subscribing"); err != nil {
 		t.Fatalf("AddMessage: %v", err)
 	}
 
-	history, _, unsubscribe := s.Subscribe()
+	history, _, unsubscribe, err := s.Subscribe(context.Background())
+	if err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
 	defer unsubscribe()
 
 	if len(history) != 1 || history[0].Text != "before subscribing" {
@@ -100,9 +112,12 @@ func TestSubscribeReplaysHistory(t *testing.T) {
 func TestSubscribePresenceCount(t *testing.T) {
 	t.Parallel()
 
-	s := New()
+	s := newTestStore(t)
 
-	_, eventsA, unsubscribeA := s.Subscribe()
+	_, eventsA, unsubscribeA, err := s.Subscribe(context.Background())
+	if err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
 	defer unsubscribeA()
 
 	evA := <-eventsA
@@ -110,7 +125,10 @@ func TestSubscribePresenceCount(t *testing.T) {
 		t.Fatalf("expected online count 1, got %+v", evA)
 	}
 
-	_, eventsB, unsubscribeB := s.Subscribe()
+	_, eventsB, unsubscribeB, err := s.Subscribe(context.Background())
+	if err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
 
 	// Both subscribers should be told the count is now 2.
 	evA2 := <-eventsA
@@ -133,14 +151,20 @@ func TestSubscribePresenceCount(t *testing.T) {
 func TestOnlineCount(t *testing.T) {
 	t.Parallel()
 
-	s := New()
+	s := newTestStore(t)
 
 	if got := s.OnlineCount(); got != 0 {
 		t.Fatalf("expected online count 0 before any subscriber, got %d", got)
 	}
 
-	_, _, unsubscribeA := s.Subscribe()
-	_, _, unsubscribeB := s.Subscribe()
+	_, _, unsubscribeA, err := s.Subscribe(context.Background())
+	if err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
+	_, _, unsubscribeB, err := s.Subscribe(context.Background())
+	if err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
 
 	if got := s.OnlineCount(); got != 2 {
 		t.Fatalf("expected online count 2, got %d", got)
