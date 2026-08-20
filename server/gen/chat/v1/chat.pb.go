@@ -22,8 +22,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// A chat participant. The server assigns id and color on Join; the
-// nickname is chosen by the user and does not need to be unique or real.
+// A chat participant. The server assigns id on Join; nickname and color
+// are chosen by the user themselves and do not need to be unique or real.
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -148,6 +148,7 @@ func (x *ChatMessage) GetSentAt() *timestamppb.Timestamp {
 type JoinRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nickname      string                 `protobuf:"bytes,1,opt,name=nickname,proto3" json:"nickname,omitempty"`
+	Color         string                 `protobuf:"bytes,2,opt,name=color,proto3" json:"color,omitempty"` // hex color chosen by the user, e.g. "#12B76A"
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -185,6 +186,13 @@ func (*JoinRequest) Descriptor() ([]byte, []int) {
 func (x *JoinRequest) GetNickname() string {
 	if x != nil {
 		return x.Nickname
+	}
+	return ""
+}
+
+func (x *JoinRequest) GetColor() string {
+	if x != nil {
+		return x.Color
 	}
 	return ""
 }
@@ -385,9 +393,10 @@ const file_chat_v1_chat_proto_rawDesc = "" +
 	"\vChatMessage\x12!\n" +
 	"\x04user\x18\x01 \x01(\v2\r.chat.v1.UserR\x04user\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x123\n" +
-	"\asent_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\")\n" +
+	"\asent_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\"?\n" +
 	"\vJoinRequest\x12\x1a\n" +
-	"\bnickname\x18\x01 \x01(\tR\bnickname\"1\n" +
+	"\bnickname\x18\x01 \x01(\tR\bnickname\x12\x14\n" +
+	"\x05color\x18\x02 \x01(\tR\x05color\"1\n" +
 	"\fJoinResponse\x12!\n" +
 	"\x04user\x18\x01 \x01(\v2\r.chat.v1.UserR\x04user\"A\n" +
 	"\x12SendMessageRequest\x12\x17\n" +

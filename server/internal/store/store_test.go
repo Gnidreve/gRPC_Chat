@@ -2,17 +2,17 @@ package store
 
 import "testing"
 
-func TestJoinAssignsColor(t *testing.T) {
+func TestJoinKeepsClientChosenNicknameAndColor(t *testing.T) {
 	s := New()
 
-	a := s.Join("Mara")
-	b := s.Join("Jonas")
+	a := s.Join("Mara", "#12B76A")
+	b := s.Join("Jonas", "#F04438")
 
-	if a.Color == "" || b.Color == "" {
-		t.Fatalf("expected colors to be assigned, got %q and %q", a.Color, b.Color)
+	if a.Nickname != "Mara" || a.Color != "#12B76A" {
+		t.Fatalf("expected Mara/#12B76A, got %q/%q", a.Nickname, a.Color)
 	}
-	if a.Color == b.Color {
-		t.Fatalf("expected distinct colors, both got %q", a.Color)
+	if b.Nickname != "Jonas" || b.Color != "#F04438" {
+		t.Fatalf("expected Jonas/#F04438, got %q/%q", b.Nickname, b.Color)
 	}
 	if a.ID == b.ID {
 		t.Fatalf("expected distinct ids, both got %q", a.ID)
@@ -29,7 +29,7 @@ func TestAddMessageUnknownUser(t *testing.T) {
 
 func TestSubscribeReceivesMessage(t *testing.T) {
 	s := New()
-	user := s.Join("Mara")
+	user := s.Join("Mara", "#12B76A")
 
 	messages, unsubscribe := s.Subscribe()
 	defer unsubscribe()

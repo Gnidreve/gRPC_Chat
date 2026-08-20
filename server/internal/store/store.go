@@ -16,14 +16,8 @@ import (
 // never joined (or was evicted).
 var ErrUnknownUser = errors.New("store: unknown user")
 
-// colors is the fixed palette users are assigned from, round-robin, on Join.
-var colors = []string{
-	"#12B76A", "#F04438", "#F79009", "#7A5AF8",
-	"#0BA5EC", "#EE46BC", "#84CC16", "#F97066",
-}
-
-// User is a chat participant: a server-assigned id and color, plus a
-// nickname the user picked themselves.
+// User is a chat participant: a server-assigned id, plus a nickname and
+// color the user picked themselves.
 type User struct {
 	ID       string
 	Nickname string
@@ -44,7 +38,6 @@ type Store struct {
 	users       map[string]User
 	messages    []Message
 	subscribers map[string]chan Message
-	nextColor   int
 }
 
 func New() *Store {
@@ -54,18 +47,17 @@ func New() *Store {
 	}
 }
 
-// Join registers a new user with the given nickname and assigns them the
-// next color from the palette.
-func (s *Store) Join(nickname string) User {
+// Join registers a new user with the given nickname and color, both
+// chosen by the user themselves.
+func (s *Store) Join(nickname, color string) User {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	user := User{
 		ID:       newID(),
 		Nickname: nickname,
-		Color:    colors[s.nextColor%len(colors)],
+		Color:    color,
 	}
-	s.nextColor++
 	s.users[user.ID] = user
 	return user
 }

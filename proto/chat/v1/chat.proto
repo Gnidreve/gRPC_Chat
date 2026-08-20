@@ -6,8 +6,8 @@ option go_package = "github.com/Gnidreve/gRPC_Chat/server/gen/chat/v1;chatv1";
 
 import "google/protobuf/timestamp.proto";
 
-// A chat participant. The server assigns id and color on Join; the
-// nickname is chosen by the user and does not need to be unique or real.
+// A chat participant. The server assigns id on Join; nickname and color
+// are chosen by the user themselves and do not need to be unique or real.
 message User {
   string id = 1;
   string nickname = 2;
@@ -23,6 +23,7 @@ message ChatMessage {
 
 message JoinRequest {
   string nickname = 1;
+  string color = 2; // hex color chosen by the user, e.g. "#12B76A"
 }
 
 message JoinResponse {
@@ -43,7 +44,7 @@ message SubscribeRequest {
 }
 
 service ChatService {
-  // Registers a new participant and assigns them a color.
+  // Registers a new participant with a client-chosen nickname and color.
   rpc Join(JoinRequest) returns (JoinResponse);
 
   // Sends a plain-text message to the room.

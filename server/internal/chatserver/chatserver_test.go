@@ -36,12 +36,12 @@ func TestJoinSendSubscribe(t *testing.T) {
 
 	client := chatv1.NewChatServiceClient(conn)
 
-	joinResp, err := client.Join(ctx, &chatv1.JoinRequest{Nickname: "Mara"})
+	joinResp, err := client.Join(ctx, &chatv1.JoinRequest{Nickname: "Mara", Color: "#12B76A"})
 	if err != nil {
 		t.Fatalf("Join: %v", err)
 	}
-	if joinResp.GetUser().GetColor() == "" {
-		t.Fatal("expected a color to be assigned")
+	if joinResp.GetUser().GetColor() != "#12B76A" {
+		t.Fatalf("expected color %q, got %q", "#12B76A", joinResp.GetUser().GetColor())
 	}
 
 	subCtx, cancel := context.WithCancel(ctx)

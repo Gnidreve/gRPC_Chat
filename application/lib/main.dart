@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/chat_screen.dart';
+import 'screens/app_gate.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -15,7 +15,7 @@ class ChatApp extends StatelessWidget {
       title: 'Chat',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const ChatScreen(),
+      home: const AppGate(),
     );
   }
 }

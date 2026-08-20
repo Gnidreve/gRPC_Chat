@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import '../models/chat_message.dart';
+import '../gen/chat/v1/chat.pb.dart';
 import '../theme/app_theme.dart';
 
 /// Stellt eine einzelne Chat-Nachricht dar (eigen oder fremd).
 /// Reines Präsentations-Widget – bekommt alles über [message] rein.
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
+  final bool isOwn;
 
-  const MessageBubble({super.key, required this.message});
+  const MessageBubble({super.key, required this.message, required this.isOwn});
 
   @override
   Widget build(BuildContext context) {
-    final isOwn = message.isOwn;
-
     return Align(
       alignment: isOwn ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
@@ -25,15 +24,15 @@ class MessageBubble extends StatelessWidget {
             crossAxisAlignment:
                 isOwn ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
-              if (!isOwn && message.senderName != null)
+              if (!isOwn)
                 Padding(
                   padding: const EdgeInsets.only(left: 2, bottom: 4),
                   child: Text(
-                    message.senderName!,
-                    style: const TextStyle(
+                    message.user.nickname,
+                    style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
+                      color: colorFromHex(message.user.color),
                     ),
                   ),
                 ),
@@ -63,7 +62,7 @@ class MessageBubble extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
                 child: Text(
-                  message.time,
+                  _formatTime(message.sentAt.toDateTime(toLocal: true)),
                   style: const TextStyle(
                     fontSize: 10.5,
                     color: AppColors.textSecondary,
@@ -75,5 +74,11 @@ class MessageBubble extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static String _formatTime(DateTime time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 }
