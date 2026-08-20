@@ -138,6 +138,14 @@ func newHistory(logger *slog.Logger) (store.History, func(), error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse CHAT_REDIS_URL: %w", err)
 	}
+	if opts.TLSConfig != nil {
+		// The Redis instance lives in the same internal Docker network and
+		// presents a self-signed certificate (no public CA signed it) — TLS
+		// here is about encrypting that in-network hop, not verifying a
+		// public identity, so skip CA verification rather than failing to
+		// connect at all.
+		opts.TLSConfig.InsecureSkipVerify = true
+	}
 	client := redis.NewClient(opts)
 
 	pingCtx, cancel := context.WithTimeout(context.Background(), redisPingTimeout)
