@@ -1,47 +1,53 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Zeile mittig unter der Top Bar: grüner Punkt + "X online".
-/// Der Wert wird als Parameter übergeben, keine eigene Logik.
+/// Zeile mittig unter der Top Bar: grüner Punkt + "X online". Der Wert wird
+/// als Parameter übergeben, keine eigene Logik. Ein Tap auf die ganze Zeile
+/// (unsichtbarer Hit-Bereich, keine visuelle Änderung) ruft [onTap] auf.
 class OnlineIndicator extends StatelessWidget {
   final int count;
+  final VoidCallback? onTap;
 
-  const OnlineIndicator({super.key, required this.count});
+  const OnlineIndicator({super.key, required this.count, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 9),
-      decoration: const BoxDecoration(
-        color: AppColors.bgApp,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const _PulsingDot(),
-          const SizedBox(width: 7),
-          Text.rich(
-            TextSpan(
-              style: const TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
-              children: [
-                TextSpan(
-                  text: '$count',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        decoration: const BoxDecoration(
+          color: AppColors.bgApp,
+          border: Border(bottom: BorderSide(color: AppColors.border)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const _PulsingDot(),
+            const SizedBox(width: 7),
+            Text.rich(
+              TextSpan(
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
                 ),
-                const TextSpan(text: ' online'),
-              ],
+                children: [
+                  TextSpan(
+                    text: '$count',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const TextSpan(text: ' online'),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

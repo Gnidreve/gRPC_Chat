@@ -7,6 +7,7 @@ import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/chat_input_bar.dart';
 import '../widgets/message_bubble.dart';
+import '../widgets/my_location_sheet.dart';
 import '../widgets/online_indicator.dart';
 
 /// Einziger Chat-Screen: Top Bar, Nachrichtenliste, Input-Bar. Abonniert
@@ -155,7 +156,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       body: SafeArea(
         child: Column(
           children: [
-            OnlineIndicator(count: _onlineCount),
+            OnlineIndicator(
+              count: _onlineCount,
+              onTap: () => showMyLocationSheet(
+                context,
+                pinColor: colorFromHex(widget.me.color),
+              ),
+            ),
             if (_error != null) _ErrorBanner(text: _error!),
             Expanded(
               child: ListView.builder(
