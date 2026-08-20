@@ -5,8 +5,8 @@ import "testing"
 func TestJoinKeepsClientChosenNicknameAndColor(t *testing.T) {
 	s := New()
 
-	a := s.Join("Mara", "#12B76A")
-	b := s.Join("Jonas", "#F04438")
+	a := s.Join("", "Mara", "#12B76A")
+	b := s.Join("", "Jonas", "#F04438")
 
 	if a.Nickname != "Mara" || a.Color != "#12B76A" {
 		t.Fatalf("expected Mara/#12B76A, got %q/%q", a.Nickname, a.Color)
@@ -16,6 +16,21 @@ func TestJoinKeepsClientChosenNicknameAndColor(t *testing.T) {
 	}
 	if a.ID == b.ID {
 		t.Fatalf("expected distinct ids, both got %q", a.ID)
+	}
+}
+
+func TestJoinReusesClientProvidedID(t *testing.T) {
+	s := New()
+
+	first := s.Join("device-abc", "Mara", "#12B76A")
+	if first.ID != "device-abc" {
+		t.Fatalf("expected id %q, got %q", "device-abc", first.ID)
+	}
+
+	// Simulate an app restart: same client id, Join called again.
+	second := s.Join("device-abc", "Mara", "#12B76A")
+	if second.ID != first.ID {
+		t.Fatalf("expected the same id across rejoins, got %q then %q", first.ID, second.ID)
 	}
 }
 
@@ -29,7 +44,7 @@ func TestAddMessageUnknownUser(t *testing.T) {
 
 func TestSubscribeReceivesMessage(t *testing.T) {
 	s := New()
-	user := s.Join("Mara", "#12B76A")
+	user := s.Join("", "Mara", "#12B76A")
 
 	_, events, unsubscribe := s.Subscribe()
 	defer unsubscribe()
@@ -55,7 +70,7 @@ func TestSubscribeReceivesMessage(t *testing.T) {
 
 func TestSubscribeReplaysHistory(t *testing.T) {
 	s := New()
-	user := s.Join("Mara", "#12B76A")
+	user := s.Join("", "Mara", "#12B76A")
 
 	if _, err := s.AddMessage(user.ID, "before subscribing"); err != nil {
 		t.Fatalf("AddMessage: %v", err)

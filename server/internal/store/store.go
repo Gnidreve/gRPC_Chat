@@ -54,14 +54,18 @@ func New() *Store {
 	}
 }
 
-// Join registers a new user with the given nickname and color, both
-// chosen by the user themselves.
-func (s *Store) Join(nickname, color string) User {
+// Join registers (or re-registers, e.g. across app restarts) a user under
+// the given id, nickname and color — all chosen by the client. Falls back
+// to a server-generated id if the client didn't send one.
+func (s *Store) Join(id, nickname, color string) User {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if id == "" {
+		id = newID()
+	}
 	user := User{
-		ID:       newID(),
+		ID:       id,
 		Nickname: nickname,
 		Color:    color,
 	}

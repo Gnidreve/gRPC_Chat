@@ -28,7 +28,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChatServiceClient interface {
-	// Registers a new participant with a client-chosen nickname and color.
+	// Registers (or re-registers, across restarts) a participant with a
+	// client-generated id and a client-chosen nickname and color.
 	Join(ctx context.Context, in *JoinRequest, opts ...grpc.CallOption) (*JoinResponse, error)
 	// Sends a plain-text message to the room.
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageResponse, error)
@@ -88,7 +89,8 @@ type ChatService_SubscribeClient = grpc.ServerStreamingClient[ChatEvent]
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility.
 type ChatServiceServer interface {
-	// Registers a new participant with a client-chosen nickname and color.
+	// Registers (or re-registers, across restarts) a participant with a
+	// client-generated id and a client-chosen nickname and color.
 	Join(context.Context, *JoinRequest) (*JoinResponse, error)
 	// Sends a plain-text message to the room.
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error)

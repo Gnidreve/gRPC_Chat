@@ -57,15 +57,16 @@ final $typed_data.Uint8List chatMessageDescriptor = $convert.base64Decode(
 const JoinRequest$json = {
   '1': 'JoinRequest',
   '2': [
-    {'1': 'nickname', '3': 1, '4': 1, '5': 9, '10': 'nickname'},
-    {'1': 'color', '3': 2, '4': 1, '5': 9, '10': 'color'},
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'nickname', '3': 2, '4': 1, '5': 9, '10': 'nickname'},
+    {'1': 'color', '3': 3, '4': 1, '5': 9, '10': 'color'},
   ],
 };
 
 /// Descriptor for `JoinRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List joinRequestDescriptor = $convert.base64Decode(
-    'CgtKb2luUmVxdWVzdBIaCghuaWNrbmFtZRgBIAEoCVIIbmlja25hbWUSFAoFY29sb3IYAiABKA'
-    'lSBWNvbG9y');
+    'CgtKb2luUmVxdWVzdBIOCgJpZBgBIAEoCVICaWQSGgoIbmlja25hbWUYAiABKAlSCG5pY2tuYW'
+    '1lEhQKBWNvbG9yGAMgASgJUgVjb2xvcg==');
 
 @$core.Deprecated('Use joinResponseDescriptor instead')
 const JoinResponse$json = {

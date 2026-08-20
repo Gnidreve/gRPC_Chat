@@ -25,9 +25,9 @@ class ChatClient {
   final ClientChannel _channel;
   late final ChatServiceClient _stub;
 
-  Future<User> join(String nickname, String color) async {
+  Future<User> join(String id, String nickname, String color) async {
     final response = await _stub.join(
-      JoinRequest(nickname: nickname, color: color),
+      JoinRequest(id: id, nickname: nickname, color: color),
     );
     return response.user;
   }

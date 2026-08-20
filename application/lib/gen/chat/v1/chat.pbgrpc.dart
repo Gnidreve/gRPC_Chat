@@ -32,7 +32,8 @@ class ChatServiceClient extends $grpc.Client {
 
   ChatServiceClient(super.channel, {super.options, super.interceptors});
 
-  /// Registers a new participant with a client-chosen nickname and color.
+  /// Registers (or re-registers, across restarts) a participant with a
+  /// client-generated id and a client-chosen nickname and color.
   $grpc.ResponseFuture<$0.JoinResponse> join(
     $0.JoinRequest request, {
     $grpc.CallOptions? options,

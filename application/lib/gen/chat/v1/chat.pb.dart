@@ -18,7 +18,8 @@ import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
-/// A chat participant. The server assigns id on Join; nickname and color
+/// A chat participant. The client generates and persists id locally (so it
+/// survives app restarts) and sends it on every Join; nickname and color
 /// are chosen by the user themselves and do not need to be unique or real.
 class User extends $pb.GeneratedMessage {
   factory User({
@@ -183,10 +184,12 @@ class ChatMessage extends $pb.GeneratedMessage {
 
 class JoinRequest extends $pb.GeneratedMessage {
   factory JoinRequest({
+    $core.String? id,
     $core.String? nickname,
     $core.String? color,
   }) {
     final result = create();
+    if (id != null) result.id = id;
     if (nickname != null) result.nickname = nickname;
     if (color != null) result.color = color;
     return result;
@@ -205,8 +208,9 @@ class JoinRequest extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'JoinRequest',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'chat.v1'),
       createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'nickname')
-    ..aOS(2, _omitFieldNames ? '' : 'color')
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'nickname')
+    ..aOS(3, _omitFieldNames ? '' : 'color')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -229,22 +233,31 @@ class JoinRequest extends $pb.GeneratedMessage {
   static JoinRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.String get nickname => $_getSZ(0);
+  $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set nickname($core.String value) => $_setString(0, value);
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
-  $core.bool hasNickname() => $_has(0);
+  $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearNickname() => $_clearField(1);
+  void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $core.String get color => $_getSZ(1);
+  $core.String get nickname => $_getSZ(1);
   @$pb.TagNumber(2)
-  set color($core.String value) => $_setString(1, value);
+  set nickname($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
-  $core.bool hasColor() => $_has(1);
+  $core.bool hasNickname() => $_has(1);
   @$pb.TagNumber(2)
-  void clearColor() => $_clearField(2);
+  void clearNickname() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get color => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set color($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasColor() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearColor() => $_clearField(3);
 }
 
 class JoinResponse extends $pb.GeneratedMessage {
