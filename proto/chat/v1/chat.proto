@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package chat.v1;
+
+option go_package = "github.com/Gnidreve/gRPC_Chat/server/gen/chat/v1;chatv1";
+
+import "google/protobuf/timestamp.proto";
+
+// A chat participant. The server assigns id and color on Join; the
+// nickname is chosen by the user and does not need to be unique or real.
+message User {
+  string id = 1;
+  string nickname = 2;
+  string color = 3; // hex color, e.g. "#12B76A"
+}
+
+// A single chat message: who sent it, when, and the plain text body.
+message ChatMessage {
+  User user = 1;
+  string text = 2;
+  google.protobuf.Timestamp sent_at = 3;
+}
+
+message JoinRequest {
+  string nickname = 1;
+}
+
+message JoinResponse {
+  User user = 1;
+}
+
+message SendMessageRequest {
+  string user_id = 1;
+  string text = 2;
+}
+
+message SendMessageResponse {
+  ChatMessage message = 1;
+}
+
+message SubscribeRequest {
+  string user_id = 1;
+}
+
+service ChatService {
+  // Registers a new participant and assigns them a color.
+  rpc Join(JoinRequest) returns (JoinResponse);
+
+  // Sends a plain-text message to the room.
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+
+  // Streams every message posted to the room, from the moment of
+  // subscribing onward.
+  rpc Subscribe(SubscribeRequest) returns (stream ChatMessage);
+}
