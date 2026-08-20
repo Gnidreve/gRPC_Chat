@@ -36,20 +36,34 @@ func (s *Server) Join(_ context.Context, req *chatv1.JoinRequest) (*chatv1.JoinR
 }
 
 // SendMessage appends a message from the requesting user and broadcasts it
-// to subscribers.
+// to subscribers. The sender's location is required — it's stored with the
+// message so other participants' distance to it can be computed later.
 func (s *Server) SendMessage(ctx context.Context, req *chatv1.SendMessageRequest) (*chatv1.SendMessageResponse, error) {
-	msg, err := s.store.AddMessage(ctx, req.GetUserId(), req.GetText())
+	if req.Lat == nil || req.Lng == nil {
+		return nil, status.Error(codes.InvalidArgument, "location is required")
+	}
+	msg, err := s.store.AddMessage(ctx, req.GetUserId(), req.GetText(), *req.Lat, *req.Lng)
 	if err != nil {
 		if errors.Is(err, store.ErrUnknownUser) {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 		return nil, status.Error(codes.Unavailable, "failed to store message")
 	}
+	// This echoes the sender's own message back to them, so no distance is
+	// computed (toProtoMessage never sets DistanceKm).
 	return &chatv1.SendMessageResponse{Message: toProtoMessage(msg)}, nil
 }
 
 // Subscribe streams message history followed by live events to the caller.
-func (s *Server) Subscribe(_ *chatv1.SubscribeRequest, stream chatv1.ChatService_SubscribeServer) error {
+// The caller's location is required and fixed for the lifetime of this
+// call: every DistanceKm on this stream, for history and live events
+// alike, is computed against it (see toProtoMessageWithDistance).
+func (s *Server) Subscribe(req *chatv1.SubscribeRequest, stream chatv1.ChatService_SubscribeServer) error {
+	if req.Lat == nil || req.Lng == nil {
+		return status.Error(codes.InvalidArgument, "location is required")
+	}
+	requesterID, refLat, refLng := req.GetUserId(), *req.Lat, *req.Lng
+
 	history, events, unsubscribe, err := s.store.Subscribe(stream.Context())
 	if err != nil {
 		return status.Error(codes.Unavailable, "failed to load message history")
@@ -64,7 +78,7 @@ func (s *Server) Subscribe(_ *chatv1.SubscribeRequest, stream chatv1.ChatService
 	}
 
 	for _, msg := range history {
-		if err := stream.Send(messageEvent(msg)); err != nil {
+		if err := stream.Send(messageEvent(msg, requesterID, refLat, refLng)); err != nil {
 			return err
 		}
 	}
@@ -77,7 +91,7 @@ func (s *Server) Subscribe(_ *chatv1.SubscribeRequest, stream chatv1.ChatService
 			if !ok {
 				return nil
 			}
-			if err := stream.Send(toProtoEvent(ev)); err != nil {
+			if err := stream.Send(toProtoEvent(ev, requesterID, refLat, refLng)); err != nil {
 				return err
 			}
 		}
@@ -100,15 +114,28 @@ func toProtoMessage(m store.Message) *chatv1.ChatMessage {
 	}
 }
 
-func messageEvent(m store.Message) *chatv1.ChatEvent {
+// toProtoMessageWithDistance is toProtoMessage plus DistanceKm: the
+// Haversine distance in kilometers, rounded, from (refLat, refLng) to
+// where m was sent. Omitted for the requester's own messages and for
+// messages with no stored location (m.HasLocation() false).
+func toProtoMessageWithDistance(m store.Message, requesterID string, refLat, refLng float64) *chatv1.ChatMessage {
+	pm := toProtoMessage(m)
+	if m.User.ID != requesterID && m.HasLocation() {
+		km := int32(math.Round(haversineKm(refLat, refLng, m.Lat, m.Lng)))
+		pm.DistanceKm = &km
+	}
+	return pm
+}
+
+func messageEvent(m store.Message, requesterID string, refLat, refLng float64) *chatv1.ChatEvent {
 	return &chatv1.ChatEvent{
-		Event: &chatv1.ChatEvent_Message{Message: toProtoMessage(m)},
+		Event: &chatv1.ChatEvent_Message{Message: toProtoMessageWithDistance(m, requesterID, refLat, refLng)},
 	}
 }
 
-func toProtoEvent(ev store.Event) *chatv1.ChatEvent {
+func toProtoEvent(ev store.Event, requesterID string, refLat, refLng float64) *chatv1.ChatEvent {
 	if ev.Message != nil {
-		return messageEvent(*ev.Message)
+		return messageEvent(*ev.Message, requesterID, refLat, refLng)
 	}
 	return &chatv1.ChatEvent{
 		Event: &chatv1.ChatEvent_Presence{

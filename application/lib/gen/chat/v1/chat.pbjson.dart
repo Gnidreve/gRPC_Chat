@@ -44,6 +44,18 @@ const ChatMessage$json = {
       '6': '.google.protobuf.Timestamp',
       '10': 'sentAt'
     },
+    {
+      '1': 'distance_km',
+      '3': 4,
+      '4': 1,
+      '5': 5,
+      '9': 0,
+      '10': 'distanceKm',
+      '17': true
+    },
+  ],
+  '8': [
+    {'1': '_distance_km'},
   ],
 };
 
@@ -51,7 +63,8 @@ const ChatMessage$json = {
 final $typed_data.Uint8List chatMessageDescriptor = $convert.base64Decode(
     'CgtDaGF0TWVzc2FnZRIhCgR1c2VyGAEgASgLMg0uY2hhdC52MS5Vc2VyUgR1c2VyEhIKBHRleH'
     'QYAiABKAlSBHRleHQSMwoHc2VudF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3Rh'
-    'bXBSBnNlbnRBdA==');
+    'bXBSBnNlbnRBdBIkCgtkaXN0YW5jZV9rbRgEIAEoBUgAUgpkaXN0YW5jZUttiAEBQg4KDF9kaX'
+    'N0YW5jZV9rbQ==');
 
 @$core.Deprecated('Use joinRequestDescriptor instead')
 const JoinRequest$json = {
@@ -86,13 +99,20 @@ const SendMessageRequest$json = {
   '2': [
     {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
     {'1': 'text', '3': 2, '4': 1, '5': 9, '10': 'text'},
+    {'1': 'lat', '3': 3, '4': 1, '5': 1, '9': 0, '10': 'lat', '17': true},
+    {'1': 'lng', '3': 4, '4': 1, '5': 1, '9': 1, '10': 'lng', '17': true},
+  ],
+  '8': [
+    {'1': '_lat'},
+    {'1': '_lng'},
   ],
 };
 
 /// Descriptor for `SendMessageRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List sendMessageRequestDescriptor = $convert.base64Decode(
     'ChJTZW5kTWVzc2FnZVJlcXVlc3QSFwoHdXNlcl9pZBgBIAEoCVIGdXNlcklkEhIKBHRleHQYAi'
-    'ABKAlSBHRleHQ=');
+    'ABKAlSBHRleHQSFQoDbGF0GAMgASgBSABSA2xhdIgBARIVCgNsbmcYBCABKAFIAVIDbG5niAEB'
+    'QgYKBF9sYXRCBgoEX2xuZw==');
 
 @$core.Deprecated('Use sendMessageResponseDescriptor instead')
 const SendMessageResponse$json = {
@@ -119,12 +139,19 @@ const SubscribeRequest$json = {
   '1': 'SubscribeRequest',
   '2': [
     {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
+    {'1': 'lat', '3': 2, '4': 1, '5': 1, '9': 0, '10': 'lat', '17': true},
+    {'1': 'lng', '3': 3, '4': 1, '5': 1, '9': 1, '10': 'lng', '17': true},
+  ],
+  '8': [
+    {'1': '_lat'},
+    {'1': '_lng'},
   ],
 };
 
 /// Descriptor for `SubscribeRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List subscribeRequestDescriptor = $convert.base64Decode(
-    'ChBTdWJzY3JpYmVSZXF1ZXN0EhcKB3VzZXJfaWQYASABKAlSBnVzZXJJZA==');
+    'ChBTdWJzY3JpYmVSZXF1ZXN0EhcKB3VzZXJfaWQYASABKAlSBnVzZXJJZBIVCgNsYXQYAiABKA'
+    'FIAFIDbGF0iAEBEhUKA2xuZxgDIAEoAUgBUgNsbmeIAQFCBgoEX2xhdEIGCgRfbG5n');
 
 @$core.Deprecated('Use presenceUpdateDescriptor instead')
 const PresenceUpdate$json = {

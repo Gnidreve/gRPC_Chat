@@ -62,7 +62,7 @@ class MessageBubble extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
                 child: Text(
-                  _formatTime(message.sentAt.toDateTime(toLocal: true)),
+                  _formatFooter(message.sentAt.toDateTime(toLocal: true)),
                   style: const TextStyle(
                     fontSize: 10.5,
                     color: AppColors.textSecondary,
@@ -76,9 +76,16 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  static String _formatTime(DateTime time) {
+  /// "Uhrzeit", or "Uhrzeit - Nkm entfernt" when the server computed a
+  /// distance for this message (never for the recipient's own messages —
+  /// the server omits distance_km for those, see chat.proto).
+  String _formatFooter(DateTime time) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    final timeText = '$hour:$minute';
+    if (message.hasDistanceKm()) {
+      return '$timeText - ${message.distanceKm}km entfernt';
+    }
+    return timeText;
   }
 }

@@ -87,10 +87,16 @@ func (x *User) GetColor() string {
 
 // A single chat message: who sent it, when, and the plain text body.
 type ChatMessage struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
-	SentAt        *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=sent_at,json=sentAt,proto3" json:"sent_at,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	User   *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	Text   string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	SentAt *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=sent_at,json=sentAt,proto3" json:"sent_at,omitempty"`
+	// Rounded straight-line distance in kilometers from the recipient's
+	// location (given in SubscribeRequest) to where this message was sent
+	// from. Computed server-side via Haversine so raw coordinates never
+	// leave the server. Absent for the recipient's own messages, and for
+	// messages that predate this field (no stored location).
+	DistanceKm    *int32 `protobuf:"varint,4,opt,name=distance_km,json=distanceKm,proto3,oneof" json:"distance_km,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -144,6 +150,13 @@ func (x *ChatMessage) GetSentAt() *timestamppb.Timestamp {
 		return x.SentAt
 	}
 	return nil
+}
+
+func (x *ChatMessage) GetDistanceKm() int32 {
+	if x != nil && x.DistanceKm != nil {
+		return *x.DistanceKm
+	}
+	return 0
 }
 
 type JoinRequest struct {
@@ -251,9 +264,14 @@ func (x *JoinResponse) GetUser() *User {
 }
 
 type SendMessageRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	UserId string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Text   string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	// Sender's current location, tagged onto the stored message so other
+	// participants' distance to it can be computed. Required (Proximity
+	// Chat is location-based) — omitting both rejects the call.
+	Lat           *float64 `protobuf:"fixed64,3,opt,name=lat,proto3,oneof" json:"lat,omitempty"`
+	Lng           *float64 `protobuf:"fixed64,4,opt,name=lng,proto3,oneof" json:"lng,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -302,6 +320,20 @@ func (x *SendMessageRequest) GetText() string {
 	return ""
 }
 
+func (x *SendMessageRequest) GetLat() float64 {
+	if x != nil && x.Lat != nil {
+		return *x.Lat
+	}
+	return 0
+}
+
+func (x *SendMessageRequest) GetLng() float64 {
+	if x != nil && x.Lng != nil {
+		return *x.Lng
+	}
+	return 0
+}
+
 type SendMessageResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       *ChatMessage           `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
@@ -347,8 +379,13 @@ func (x *SendMessageResponse) GetMessage() *ChatMessage {
 }
 
 type SubscribeRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	UserId string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// Caller's current location — the fixed reference point used to compute
+	// distance_km for every message on this stream (history replay and live
+	// events alike) for the lifetime of this Subscribe call. Required.
+	Lat           *float64 `protobuf:"fixed64,2,opt,name=lat,proto3,oneof" json:"lat,omitempty"`
+	Lng           *float64 `protobuf:"fixed64,3,opt,name=lng,proto3,oneof" json:"lng,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -388,6 +425,20 @@ func (x *SubscribeRequest) GetUserId() string {
 		return x.UserId
 	}
 	return ""
+}
+
+func (x *SubscribeRequest) GetLat() float64 {
+	if x != nil && x.Lat != nil {
+		return *x.Lat
+	}
+	return 0
+}
+
+func (x *SubscribeRequest) GetLng() float64 {
+	if x != nil && x.Lng != nil {
+		return *x.Lng
+	}
+	return 0
 }
 
 // How many participants currently have a live Subscribe stream open.
@@ -527,24 +578,35 @@ const file_chat_v1_chat_proto_rawDesc = "" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bnickname\x18\x02 \x01(\tR\bnickname\x12\x14\n" +
-	"\x05color\x18\x03 \x01(\tR\x05color\"y\n" +
+	"\x05color\x18\x03 \x01(\tR\x05color\"\xaf\x01\n" +
 	"\vChatMessage\x12!\n" +
 	"\x04user\x18\x01 \x01(\v2\r.chat.v1.UserR\x04user\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x123\n" +
-	"\asent_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\"O\n" +
+	"\asent_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\x12$\n" +
+	"\vdistance_km\x18\x04 \x01(\x05H\x00R\n" +
+	"distanceKm\x88\x01\x01B\x0e\n" +
+	"\f_distance_km\"O\n" +
 	"\vJoinRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bnickname\x18\x02 \x01(\tR\bnickname\x12\x14\n" +
 	"\x05color\x18\x03 \x01(\tR\x05color\"1\n" +
 	"\fJoinResponse\x12!\n" +
-	"\x04user\x18\x01 \x01(\v2\r.chat.v1.UserR\x04user\"A\n" +
+	"\x04user\x18\x01 \x01(\v2\r.chat.v1.UserR\x04user\"\x7f\n" +
 	"\x12SendMessageRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
-	"\x04text\x18\x02 \x01(\tR\x04text\"E\n" +
+	"\x04text\x18\x02 \x01(\tR\x04text\x12\x15\n" +
+	"\x03lat\x18\x03 \x01(\x01H\x00R\x03lat\x88\x01\x01\x12\x15\n" +
+	"\x03lng\x18\x04 \x01(\x01H\x01R\x03lng\x88\x01\x01B\x06\n" +
+	"\x04_latB\x06\n" +
+	"\x04_lng\"E\n" +
 	"\x13SendMessageResponse\x12.\n" +
-	"\amessage\x18\x01 \x01(\v2\x14.chat.v1.ChatMessageR\amessage\"+\n" +
+	"\amessage\x18\x01 \x01(\v2\x14.chat.v1.ChatMessageR\amessage\"i\n" +
 	"\x10SubscribeRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"3\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
+	"\x03lat\x18\x02 \x01(\x01H\x00R\x03lat\x88\x01\x01\x12\x15\n" +
+	"\x03lng\x18\x03 \x01(\x01H\x01R\x03lng\x88\x01\x01B\x06\n" +
+	"\x04_latB\x06\n" +
+	"\x04_lng\"3\n" +
 	"\x0ePresenceUpdate\x12!\n" +
 	"\fonline_count\x18\x01 \x01(\x05R\vonlineCount\"}\n" +
 	"\tChatEvent\x120\n" +
@@ -606,6 +668,9 @@ func file_chat_v1_chat_proto_init() {
 	if File_chat_v1_chat_proto != nil {
 		return
 	}
+	file_chat_v1_chat_proto_msgTypes[1].OneofWrappers = []any{}
+	file_chat_v1_chat_proto_msgTypes[4].OneofWrappers = []any{}
+	file_chat_v1_chat_proto_msgTypes[6].OneofWrappers = []any{}
 	file_chat_v1_chat_proto_msgTypes[8].OneofWrappers = []any{
 		(*ChatEvent_Message)(nil),
 		(*ChatEvent_Presence)(nil),

@@ -2,6 +2,7 @@ import 'package:grpc/grpc.dart';
 
 import '../config/server_config.dart';
 import '../gen/chat/v1/chat.pbgrpc.dart';
+import 'location_service.dart';
 
 export '../gen/chat/v1/chat.pb.dart' show ChatEvent, ChatMessage, User;
 
@@ -42,14 +43,25 @@ class ChatClient {
     return response.user;
   }
 
-  Future<void> sendMessage(String userId, String text) async {
+  /// [location] is required — the server rejects a message with no
+  /// location, since it's what lets recipients see a distance to it.
+  Future<void> sendMessage(String userId, String text, LatLng location) async {
     await _stub.sendMessage(
-      SendMessageRequest(userId: userId, text: text),
+      SendMessageRequest(
+        userId: userId,
+        text: text,
+        lat: location.lat,
+        lng: location.lng,
+      ),
     );
   }
 
-  Stream<ChatEvent> subscribe(String userId) {
-    return _stub.subscribe(SubscribeRequest(userId: userId));
+  /// [location] is required, and fixed for the lifetime of this stream —
+  /// see SubscribeRequest in chat.proto for why it isn't re-sent per call.
+  Stream<ChatEvent> subscribe(String userId, LatLng location) {
+    return _stub.subscribe(
+      SubscribeRequest(userId: userId, lat: location.lat, lng: location.lng),
+    );
   }
 
   Future<void> shutdown() => _channel.shutdown();

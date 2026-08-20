@@ -3,6 +3,10 @@
     <!-- Required to launch the system package installer for the
          self-update flow (application/vnd.android.package-archive). -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <!-- Proximity Chat tags every message with the sender's location so the
+         server can compute distance-to-message for recipients; coarse
+         accuracy is enough for that. Mandatory — see LocationService. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="Proximity Chat"
         android:name="${applicationName}"

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../services/chat_client.dart';
+import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/chat_input_bar.dart';
 import '../widgets/message_bubble.dart';
@@ -31,9 +32,10 @@ const _reconnectDelays = [
   Duration(seconds: 8),
 ];
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   final _messages = <ChatMessage>[];
   final _scrollController = ScrollController();
+  final _locationService = LocationService();
   StreamSubscription<ChatEvent>? _subscription;
   Timer? _reconnectTimer;
   int _reconnectAttempt = 0;
@@ -43,13 +45,41 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _subscribeToEvents();
   }
 
-  void _subscribeToEvents() {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Resuming from background re-subscribes with a fresh location, even
+    // if the underlying stream survived backgrounding — the distance shown
+    // for new messages should reflect where the user is now, not where
+    // they were when the app was last opened.
+    if (state == AppLifecycleState.resumed) {
+      _subscribeToEvents();
+    }
+  }
+
+  Future<void> _subscribeToEvents() async {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _subscription?.cancel();
-    _subscription = widget.chatClient.subscribe(widget.me.id).listen(
+
+    final LatLng location;
+    try {
+      location = await _locationService.current();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = 'Standort nicht verfügbar, versuche erneut …');
+      _scheduleReconnect();
+      return;
+    }
+    if (!mounted) return;
+
+    _subscription =
+        widget.chatClient.subscribe(widget.me.id, location).listen(
       (event) {
+        if (!mounted) return;
         setState(() {
           _reconnectAttempt = 0;
           _error = null;
@@ -62,10 +92,14 @@ class _ChatScreenState extends State<ChatScreen> {
         if (event.hasMessage()) _scrollToBottom();
       },
       onError: (Object error) {
+        if (!mounted) return;
         setState(() => _error = 'Verbindung verloren, verbinde neu …');
         _scheduleReconnect();
       },
-      onDone: _scheduleReconnect,
+      onDone: () {
+        if (!mounted) return;
+        _scheduleReconnect();
+      },
     );
   }
 
@@ -86,6 +120,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _reconnectTimer?.cancel();
     _subscription?.cancel();
     _scrollController.dispose();
@@ -105,8 +140,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _send(String text) async {
     try {
-      await widget.chatClient.sendMessage(widget.me.id, text);
+      final location = await _locationService.current();
+      await widget.chatClient.sendMessage(widget.me.id, text, location);
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = 'Nachricht konnte nicht gesendet werden');
     }
   }

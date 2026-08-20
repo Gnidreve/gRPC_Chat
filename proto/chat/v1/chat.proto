@@ -20,6 +20,13 @@ message ChatMessage {
   User user = 1;
   string text = 2;
   google.protobuf.Timestamp sent_at = 3;
+
+  // Rounded straight-line distance in kilometers from the recipient's
+  // location (given in SubscribeRequest) to where this message was sent
+  // from. Computed server-side via Haversine so raw coordinates never
+  // leave the server. Absent for the recipient's own messages, and for
+  // messages that predate this field (no stored location).
+  optional int32 distance_km = 4;
 }
 
 message JoinRequest {
@@ -35,6 +42,12 @@ message JoinResponse {
 message SendMessageRequest {
   string user_id = 1;
   string text = 2;
+
+  // Sender's current location, tagged onto the stored message so other
+  // participants' distance to it can be computed. Required (Proximity
+  // Chat is location-based) — omitting both rejects the call.
+  optional double lat = 3;
+  optional double lng = 4;
 }
 
 message SendMessageResponse {
@@ -43,6 +56,12 @@ message SendMessageResponse {
 
 message SubscribeRequest {
   string user_id = 1;
+
+  // Caller's current location — the fixed reference point used to compute
+  // distance_km for every message on this stream (history replay and live
+  // events alike) for the lifetime of this Subscribe call. Required.
+  optional double lat = 2;
+  optional double lng = 3;
 }
 
 // How many participants currently have a live Subscribe stream open.
