@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --bg-app: #ffffff;
+      --text-primary: #111113;
+      --text-secondary: #8a8a8f;
+      --accent-green: #12b76a;
+      --button-bg: #111113;
+      --button-text: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+    }
+
+    body {
+      background: var(--bg-app);
+      color: var(--text-primary);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .hero {
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+
+    p.subtitle {
+      margin: 16px 0 0;
+      max-width: 32ch;
+      font-size: clamp(1rem, 2.5vw, 1.15rem);
+      font-weight: 500;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .download {
+      margin-top: 36px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      border-radius: 100px;
+      background: var(--button-bg);
+      color: var(--button-text);
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    .download:hover {
+      transform: translateY(-1px);
+      opacity: 0.92;
+    }
+
+    .download svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .hint {
+      margin-top: 14px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <main class="hero">
+    <div class="dot"></div>
+    <h1>Chat</h1>
+    <p class="subtitle">
+      Ein schneller, einfacher Chat für uns. Jeder kriegt eine Farbe, kein
+      Schnickschnack.
+    </p>
+    <a
+      class="download"
+      href="https://github.com/Gnidreve/gRPC_Chat/releases/latest/download/app-release.apk"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+      Für Android herunterladen
+    </a>
+    <p class="hint">Aktuell nur für Android · APK von GitHub Releases</p>
+  </main>
+</body>
+</html>
