@@ -107,7 +107,7 @@ class _TopBar extends StatelessWidget {
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: const Text(
-        'Chat',
+        'Proximity Chat',
         textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: 17,
