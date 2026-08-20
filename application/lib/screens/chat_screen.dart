@@ -6,6 +6,7 @@ import '../services/chat_client.dart';
 import '../theme/app_theme.dart';
 import '../widgets/chat_input_bar.dart';
 import '../widgets/message_bubble.dart';
+import '../widgets/online_indicator.dart';
 
 /// Einziger Chat-Screen: Top Bar, Nachrichtenliste, Input-Bar. Abonniert
 /// den Server-Stream über [chatClient] und zeigt Nachrichten live an.
@@ -22,16 +23,23 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _messages = <ChatMessage>[];
   final _scrollController = ScrollController();
-  StreamSubscription<ChatMessage>? _subscription;
+  StreamSubscription<ChatEvent>? _subscription;
+  int _onlineCount = 0;
   String? _error;
 
   @override
   void initState() {
     super.initState();
     _subscription = widget.chatClient.subscribe(widget.me.id).listen(
-      (message) {
-        setState(() => _messages.add(message));
-        _scrollToBottom();
+      (event) {
+        setState(() {
+          if (event.hasMessage()) {
+            _messages.add(event.message);
+          } else if (event.hasPresence()) {
+            _onlineCount = event.presence.onlineCount;
+          }
+        });
+        if (event.hasMessage()) _scrollToBottom();
       },
       onError: (Object error) {
         setState(() => _error = 'Verbindung verloren: $error');
@@ -73,6 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Column(
           children: [
             const _TopBar(),
+            OnlineIndicator(count: _onlineCount),
             if (_error != null) _ErrorBanner(text: _error!),
             Expanded(
               child: ListView.builder(

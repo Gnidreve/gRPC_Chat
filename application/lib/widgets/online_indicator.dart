@@ -1,0 +1,111 @@
+import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+
+/// Zeile mittig unter der Top Bar: grüner Punkt + "X online".
+/// Der Wert wird als Parameter übergeben, keine eigene Logik.
+class OnlineIndicator extends StatelessWidget {
+  final int count;
+
+  const OnlineIndicator({super.key, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      decoration: const BoxDecoration(
+        color: AppColors.bgApp,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const _PulsingDot(),
+          const SizedBox(width: 7),
+          Text.rich(
+            TextSpan(
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+              children: [
+                TextSpan(
+                  text: '$count',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const TextSpan(text: ' online'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rein visueller Pulse-Effekt, keine fachliche Logik.
+class _PulsingDot extends StatefulWidget {
+  const _PulsingDot();
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2200),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 17,
+      height: 17,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          final t = _controller.value;
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Opacity(
+                opacity: (1 - t) * 0.35,
+                child: Transform.scale(
+                  scale: 0.6 + t * 1.3,
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: AppColors.accentGreen,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                  color: AppColors.accentGreen,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}

@@ -43,6 +43,20 @@ message SubscribeRequest {
   string user_id = 1;
 }
 
+// How many participants currently have a live Subscribe stream open.
+message PresenceUpdate {
+  int32 online_count = 1;
+}
+
+// One item on the Subscribe stream: either a chat message or a presence
+// (online count) update.
+message ChatEvent {
+  oneof event {
+    ChatMessage message = 1;
+    PresenceUpdate presence = 2;
+  }
+}
+
 service ChatService {
   // Registers a new participant with a client-chosen nickname and color.
   rpc Join(JoinRequest) returns (JoinResponse);
@@ -50,7 +64,7 @@ service ChatService {
   // Sends a plain-text message to the room.
   rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
 
-  // Streams every message posted to the room, from the moment of
-  // subscribing onward.
-  rpc Subscribe(SubscribeRequest) returns (stream ChatMessage);
+  // Streams the full message history first, then every message and
+  // presence change live from that point on.
+  rpc Subscribe(SubscribeRequest) returns (stream ChatEvent);
 }

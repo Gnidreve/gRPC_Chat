@@ -480,6 +480,149 @@ class SubscribeRequest extends $pb.GeneratedMessage {
   void clearUserId() => $_clearField(1);
 }
 
+/// How many participants currently have a live Subscribe stream open.
+class PresenceUpdate extends $pb.GeneratedMessage {
+  factory PresenceUpdate({
+    $core.int? onlineCount,
+  }) {
+    final result = create();
+    if (onlineCount != null) result.onlineCount = onlineCount;
+    return result;
+  }
+
+  PresenceUpdate._();
+
+  factory PresenceUpdate.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory PresenceUpdate.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'PresenceUpdate',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'chat.v1'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'onlineCount')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PresenceUpdate clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PresenceUpdate copyWith(void Function(PresenceUpdate) updates) =>
+      super.copyWith((message) => updates(message as PresenceUpdate))
+          as PresenceUpdate;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static PresenceUpdate create() => PresenceUpdate._();
+  @$core.override
+  PresenceUpdate createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static PresenceUpdate getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<PresenceUpdate>(create);
+  static PresenceUpdate? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get onlineCount => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set onlineCount($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasOnlineCount() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearOnlineCount() => $_clearField(1);
+}
+
+enum ChatEvent_Event { message, presence, notSet }
+
+/// One item on the Subscribe stream: either a chat message or a presence
+/// (online count) update.
+class ChatEvent extends $pb.GeneratedMessage {
+  factory ChatEvent({
+    ChatMessage? message,
+    PresenceUpdate? presence,
+  }) {
+    final result = create();
+    if (message != null) result.message = message;
+    if (presence != null) result.presence = presence;
+    return result;
+  }
+
+  ChatEvent._();
+
+  factory ChatEvent.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ChatEvent.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static const $core.Map<$core.int, ChatEvent_Event> _ChatEvent_EventByTag = {
+    1: ChatEvent_Event.message,
+    2: ChatEvent_Event.presence,
+    0: ChatEvent_Event.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChatEvent',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'chat.v1'),
+      createEmptyInstance: create)
+    ..oo(0, [1, 2])
+    ..aOM<ChatMessage>(1, _omitFieldNames ? '' : 'message',
+        subBuilder: ChatMessage.create)
+    ..aOM<PresenceUpdate>(2, _omitFieldNames ? '' : 'presence',
+        subBuilder: PresenceUpdate.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChatEvent clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChatEvent copyWith(void Function(ChatEvent) updates) =>
+      super.copyWith((message) => updates(message as ChatEvent)) as ChatEvent;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ChatEvent create() => ChatEvent._();
+  @$core.override
+  ChatEvent createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ChatEvent getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ChatEvent>(create);
+  static ChatEvent? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  ChatEvent_Event whichEvent() => _ChatEvent_EventByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  void clearEvent() => $_clearField($_whichOneof(0));
+
+  @$pb.TagNumber(1)
+  ChatMessage get message => $_getN(0);
+  @$pb.TagNumber(1)
+  set message(ChatMessage value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMessage() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMessage() => $_clearField(1);
+  @$pb.TagNumber(1)
+  ChatMessage ensureMessage() => $_ensure(0);
+
+  @$pb.TagNumber(2)
+  PresenceUpdate get presence => $_getN(1);
+  @$pb.TagNumber(2)
+  set presence(PresenceUpdate value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPresence() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPresence() => $_clearField(2);
+  @$pb.TagNumber(2)
+  PresenceUpdate ensurePresence() => $_ensure(1);
+}
+
 const $core.bool _omitFieldNames =
     $core.bool.fromEnvironment('protobuf.omit_field_names');
 const $core.bool _omitMessageNames =

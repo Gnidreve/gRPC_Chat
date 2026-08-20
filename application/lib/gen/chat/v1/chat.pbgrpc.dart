@@ -48,9 +48,9 @@ class ChatServiceClient extends $grpc.Client {
     return $createUnaryCall(_$sendMessage, request, options: options);
   }
 
-  /// Streams every message posted to the room, from the moment of
-  /// subscribing onward.
-  $grpc.ResponseStream<$0.ChatMessage> subscribe(
+  /// Streams the full message history first, then every message and
+  /// presence change live from that point on.
+  $grpc.ResponseStream<$0.ChatEvent> subscribe(
     $0.SubscribeRequest request, {
     $grpc.CallOptions? options,
   }) {
@@ -71,10 +71,10 @@ class ChatServiceClient extends $grpc.Client {
           ($0.SendMessageRequest value) => value.writeToBuffer(),
           $0.SendMessageResponse.fromBuffer);
   static final _$subscribe =
-      $grpc.ClientMethod<$0.SubscribeRequest, $0.ChatMessage>(
+      $grpc.ClientMethod<$0.SubscribeRequest, $0.ChatEvent>(
           '/chat.v1.ChatService/Subscribe',
           ($0.SubscribeRequest value) => value.writeToBuffer(),
-          $0.ChatMessage.fromBuffer);
+          $0.ChatEvent.fromBuffer);
 }
 
 @$pb.GrpcServiceName('chat.v1.ChatService')
@@ -98,13 +98,13 @@ abstract class ChatServiceBase extends $grpc.Service {
             ($core.List<$core.int> value) =>
                 $0.SendMessageRequest.fromBuffer(value),
             ($0.SendMessageResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$0.SubscribeRequest, $0.ChatMessage>(
+    $addMethod($grpc.ServiceMethod<$0.SubscribeRequest, $0.ChatEvent>(
         'Subscribe',
         subscribe_Pre,
         false,
         true,
         ($core.List<$core.int> value) => $0.SubscribeRequest.fromBuffer(value),
-        ($0.ChatMessage value) => value.writeToBuffer()));
+        ($0.ChatEvent value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.JoinResponse> join_Pre(
@@ -123,11 +123,11 @@ abstract class ChatServiceBase extends $grpc.Service {
   $async.Future<$0.SendMessageResponse> sendMessage(
       $grpc.ServiceCall call, $0.SendMessageRequest request);
 
-  $async.Stream<$0.ChatMessage> subscribe_Pre($grpc.ServiceCall $call,
+  $async.Stream<$0.ChatEvent> subscribe_Pre($grpc.ServiceCall $call,
       $async.Future<$0.SubscribeRequest> $request) async* {
     yield* subscribe($call, await $request);
   }
 
-  $async.Stream<$0.ChatMessage> subscribe(
+  $async.Stream<$0.ChatEvent> subscribe(
       $grpc.ServiceCall call, $0.SubscribeRequest request);
 }
