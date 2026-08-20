@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -39,6 +40,13 @@ func (s *Server) SendMessage(_ context.Context, req *chatv1.SendMessageRequest) 
 func (s *Server) Subscribe(_ *chatv1.SubscribeRequest, stream chatv1.ChatService_SubscribeServer) error {
 	messages, unsubscribe := s.store.Subscribe()
 	defer unsubscribe()
+
+	// Send headers now that the subscription is registered with the store,
+	// so a client that waits for them (via stream.Header()) is guaranteed
+	// not to miss a message it sends right after Subscribe returns.
+	if err := stream.SendHeader(metadata.MD{}); err != nil {
+		return err
+	}
 
 	for {
 		select {

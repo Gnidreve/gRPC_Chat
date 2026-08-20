@@ -50,6 +50,11 @@ func TestJoinSendSubscribe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Subscribe: %v", err)
 	}
+	// Wait for the server to confirm the subscription is registered before
+	// sending, otherwise the message could race the store registration.
+	if _, err := stream.Header(); err != nil {
+		t.Fatalf("stream.Header: %v", err)
+	}
 
 	if _, err := client.SendMessage(ctx, &chatv1.SendMessageRequest{
 		UserId: joinResp.GetUser().GetId(),
