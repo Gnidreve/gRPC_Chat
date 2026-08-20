@@ -8,9 +8,13 @@ import '../theme/app_theme.dart';
 const _wideAreaZoom = 13.0;
 const _pinSize = 40.0;
 
-/// Opens a 50%-height, drag-to-dismiss bottom sheet showing a static
-/// OpenStreetMap view (free, no API key) centered on the caller's own
-/// current location — orientation only, not interactive: no zoom, no pan.
+/// Opens a drag-to-dismiss bottom sheet showing a static OpenStreetMap view
+/// (free, no API key) centered on the caller's own current location —
+/// orientation only, not interactive: no zoom, no pan. The map is a fixed
+/// square (device width x device width, not a fraction of screen height —
+/// screen height varies too much across devices to size off of), and the
+/// whole sheet sits inside the bottom safe area so it's never covered by
+/// system gesture/nav UI.
 Future<void> showMyLocationSheet(
   BuildContext context, {
   required Color pinColor,
@@ -22,8 +26,8 @@ Future<void> showMyLocationSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
     ),
-    builder: (context) => SizedBox(
-      height: MediaQuery.sizeOf(context).height * 0.5,
+    builder: (context) => SafeArea(
+      top: false,
       child: _MyLocationSheetContent(pinColor: pinColor),
     ),
   );
@@ -45,6 +49,7 @@ class _MyLocationSheetContentState extends State<_MyLocationSheetContent> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 10),
         Container(
@@ -56,7 +61,10 @@ class _MyLocationSheetContentState extends State<_MyLocationSheetContent> {
           ),
         ),
         const SizedBox(height: 10),
-        Expanded(
+        AspectRatio(
+          // Square, sized off the device's width — a fraction of screen
+          // height isn't consistent across devices, width is.
+          aspectRatio: 1,
           child: FutureBuilder<LatLng>(
             future: _location,
             builder: (context, snapshot) {
@@ -109,6 +117,7 @@ class _MyLocationSheetContentState extends State<_MyLocationSheetContent> {
             },
           ),
         ),
+        const SizedBox(height: 16),
       ],
     );
   }
