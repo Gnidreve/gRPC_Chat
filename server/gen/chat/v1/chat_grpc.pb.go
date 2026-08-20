@@ -32,9 +32,9 @@ type ChatServiceClient interface {
 	Join(ctx context.Context, in *JoinRequest, opts ...grpc.CallOption) (*JoinResponse, error)
 	// Sends a plain-text message to the room.
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageResponse, error)
-	// Streams every message posted to the room, from the moment of
-	// subscribing onward.
-	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatMessage], error)
+	// Streams the full message history first, then every message and
+	// presence change live from that point on.
+	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatEvent], error)
 }
 
 type chatServiceClient struct {
@@ -65,13 +65,13 @@ func (c *chatServiceClient) SendMessage(ctx context.Context, in *SendMessageRequ
 	return out, nil
 }
 
-func (c *chatServiceClient) Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatMessage], error) {
+func (c *chatServiceClient) Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ChatEvent], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ChatService_ServiceDesc.Streams[0], ChatService_Subscribe_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[SubscribeRequest, ChatMessage]{ClientStream: stream}
+	x := &grpc.GenericClientStream[SubscribeRequest, ChatEvent]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (c *chatServiceClient) Subscribe(ctx context.Context, in *SubscribeRequest,
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ChatService_SubscribeClient = grpc.ServerStreamingClient[ChatMessage]
+type ChatService_SubscribeClient = grpc.ServerStreamingClient[ChatEvent]
 
 // ChatServiceServer is the server API for ChatService service.
 // All implementations must embed UnimplementedChatServiceServer
@@ -92,9 +92,9 @@ type ChatServiceServer interface {
 	Join(context.Context, *JoinRequest) (*JoinResponse, error)
 	// Sends a plain-text message to the room.
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error)
-	// Streams every message posted to the room, from the moment of
-	// subscribing onward.
-	Subscribe(*SubscribeRequest, grpc.ServerStreamingServer[ChatMessage]) error
+	// Streams the full message history first, then every message and
+	// presence change live from that point on.
+	Subscribe(*SubscribeRequest, grpc.ServerStreamingServer[ChatEvent]) error
 	mustEmbedUnimplementedChatServiceServer()
 }
 
@@ -111,7 +111,7 @@ func (UnimplementedChatServiceServer) Join(context.Context, *JoinRequest) (*Join
 func (UnimplementedChatServiceServer) SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendMessage not implemented")
 }
-func (UnimplementedChatServiceServer) Subscribe(*SubscribeRequest, grpc.ServerStreamingServer[ChatMessage]) error {
+func (UnimplementedChatServiceServer) Subscribe(*SubscribeRequest, grpc.ServerStreamingServer[ChatEvent]) error {
 	return status.Error(codes.Unimplemented, "method Subscribe not implemented")
 }
 func (UnimplementedChatServiceServer) mustEmbedUnimplementedChatServiceServer() {}
@@ -176,11 +176,11 @@ func _ChatService_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) e
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(ChatServiceServer).Subscribe(m, &grpc.GenericServerStream[SubscribeRequest, ChatMessage]{ServerStream: stream})
+	return srv.(ChatServiceServer).Subscribe(m, &grpc.GenericServerStream[SubscribeRequest, ChatEvent]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ChatService_SubscribeServer = grpc.ServerStreamingServer[ChatMessage]
+type ChatService_SubscribeServer = grpc.ServerStreamingServer[ChatEvent]
 
 // ChatService_ServiceDesc is the grpc.ServiceDesc for ChatService service.
 // It's only intended for direct use with grpc.RegisterService,

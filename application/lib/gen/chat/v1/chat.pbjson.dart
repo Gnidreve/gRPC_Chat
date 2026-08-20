@@ -124,3 +124,49 @@ const SubscribeRequest$json = {
 /// Descriptor for `SubscribeRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List subscribeRequestDescriptor = $convert.base64Decode(
     'ChBTdWJzY3JpYmVSZXF1ZXN0EhcKB3VzZXJfaWQYASABKAlSBnVzZXJJZA==');
+
+@$core.Deprecated('Use presenceUpdateDescriptor instead')
+const PresenceUpdate$json = {
+  '1': 'PresenceUpdate',
+  '2': [
+    {'1': 'online_count', '3': 1, '4': 1, '5': 5, '10': 'onlineCount'},
+  ],
+};
+
+/// Descriptor for `PresenceUpdate`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List presenceUpdateDescriptor = $convert.base64Decode(
+    'Cg5QcmVzZW5jZVVwZGF0ZRIhCgxvbmxpbmVfY291bnQYASABKAVSC29ubGluZUNvdW50');
+
+@$core.Deprecated('Use chatEventDescriptor instead')
+const ChatEvent$json = {
+  '1': 'ChatEvent',
+  '2': [
+    {
+      '1': 'message',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.chat.v1.ChatMessage',
+      '9': 0,
+      '10': 'message'
+    },
+    {
+      '1': 'presence',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.chat.v1.PresenceUpdate',
+      '9': 0,
+      '10': 'presence'
+    },
+  ],
+  '8': [
+    {'1': 'event'},
+  ],
+};
+
+/// Descriptor for `ChatEvent`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List chatEventDescriptor = $convert.base64Decode(
+    'CglDaGF0RXZlbnQSMAoHbWVzc2FnZRgBIAEoCzIULmNoYXQudjEuQ2hhdE1lc3NhZ2VIAFIHbW'
+    'Vzc2FnZRI1CghwcmVzZW5jZRgCIAEoCzIXLmNoYXQudjEuUHJlc2VuY2VVcGRhdGVIAFIIcHJl'
+    'c2VuY2VCBwoFZXZlbnQ=');

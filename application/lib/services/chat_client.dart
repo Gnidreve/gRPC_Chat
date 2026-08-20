@@ -3,7 +3,7 @@ import 'package:grpc/grpc.dart';
 import '../config/server_config.dart';
 import '../gen/chat/v1/chat.pbgrpc.dart';
 
-export '../gen/chat/v1/chat.pb.dart' show ChatMessage, User;
+export '../gen/chat/v1/chat.pb.dart' show ChatEvent, ChatMessage, User;
 
 /// Thin wrapper around the generated ChatServiceClient: owns the gRPC
 /// channel (pointed at [ServerConfig]) and exposes the three chat
@@ -38,7 +38,7 @@ class ChatClient {
     );
   }
 
-  Stream<ChatMessage> subscribe(String userId) {
+  Stream<ChatEvent> subscribe(String userId) {
     return _stub.subscribe(SubscribeRequest(userId: userId));
   }
 

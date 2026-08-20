@@ -38,25 +38,31 @@ func (s *Server) SendMessage(_ context.Context, req *chatv1.SendMessageRequest) 
 }
 
 func (s *Server) Subscribe(_ *chatv1.SubscribeRequest, stream chatv1.ChatService_SubscribeServer) error {
-	messages, unsubscribe := s.store.Subscribe()
+	history, events, unsubscribe := s.store.Subscribe()
 	defer unsubscribe()
 
 	// Send headers now that the subscription is registered with the store,
 	// so a client that waits for them (via stream.Header()) is guaranteed
-	// not to miss a message it sends right after Subscribe returns.
+	// not to miss an event it triggers right after Subscribe returns.
 	if err := stream.SendHeader(metadata.MD{}); err != nil {
 		return err
+	}
+
+	for _, msg := range history {
+		if err := stream.Send(messageEvent(msg)); err != nil {
+			return err
+		}
 	}
 
 	for {
 		select {
 		case <-stream.Context().Done():
 			return stream.Context().Err()
-		case msg, ok := <-messages:
+		case ev, ok := <-events:
 			if !ok {
 				return nil
 			}
-			if err := stream.Send(toProtoMessage(msg)); err != nil {
+			if err := stream.Send(toProtoEvent(ev)); err != nil {
 				return err
 			}
 		}
@@ -76,5 +82,22 @@ func toProtoMessage(m store.Message) *chatv1.ChatMessage {
 		User:   toProtoUser(m.User),
 		Text:   m.Text,
 		SentAt: timestamppb.New(m.SentAt),
+	}
+}
+
+func messageEvent(m store.Message) *chatv1.ChatEvent {
+	return &chatv1.ChatEvent{
+		Event: &chatv1.ChatEvent_Message{Message: toProtoMessage(m)},
+	}
+}
+
+func toProtoEvent(ev store.Event) *chatv1.ChatEvent {
+	if ev.Message != nil {
+		return messageEvent(*ev.Message)
+	}
+	return &chatv1.ChatEvent{
+		Event: &chatv1.ChatEvent_Presence{
+			Presence: &chatv1.PresenceUpdate{OnlineCount: int32(*ev.OnlineCount)},
+		},
 	}
 }

@@ -31,22 +31,71 @@ func TestSubscribeReceivesMessage(t *testing.T) {
 	s := New()
 	user := s.Join("Mara", "#12B76A")
 
-	messages, unsubscribe := s.Subscribe()
+	_, events, unsubscribe := s.Subscribe()
 	defer unsubscribe()
+
+	// The subscriber's own join broadcasts a presence event; drain it.
+	<-events
 
 	if _, err := s.AddMessage(user.ID, "hey"); err != nil {
 		t.Fatalf("AddMessage: %v", err)
 	}
 
-	select {
-	case msg := <-messages:
-		if msg.Text != "hey" {
-			t.Fatalf("expected text %q, got %q", "hey", msg.Text)
-		}
-		if msg.User.ID != user.ID {
-			t.Fatalf("expected sender %q, got %q", user.ID, msg.User.ID)
-		}
-	default:
-		t.Fatal("expected a message to be waiting on the subscriber channel")
+	ev := <-events
+	if ev.Message == nil {
+		t.Fatalf("expected a message event, got %+v", ev)
+	}
+	if ev.Message.Text != "hey" {
+		t.Fatalf("expected text %q, got %q", "hey", ev.Message.Text)
+	}
+	if ev.Message.User.ID != user.ID {
+		t.Fatalf("expected sender %q, got %q", user.ID, ev.Message.User.ID)
+	}
+}
+
+func TestSubscribeReplaysHistory(t *testing.T) {
+	s := New()
+	user := s.Join("Mara", "#12B76A")
+
+	if _, err := s.AddMessage(user.ID, "before subscribing"); err != nil {
+		t.Fatalf("AddMessage: %v", err)
+	}
+
+	history, _, unsubscribe := s.Subscribe()
+	defer unsubscribe()
+
+	if len(history) != 1 || history[0].Text != "before subscribing" {
+		t.Fatalf("expected history with 1 message, got %+v", history)
+	}
+}
+
+func TestSubscribePresenceCount(t *testing.T) {
+	s := New()
+
+	_, eventsA, unsubscribeA := s.Subscribe()
+	defer unsubscribeA()
+
+	evA := <-eventsA
+	if evA.OnlineCount == nil || *evA.OnlineCount != 1 {
+		t.Fatalf("expected online count 1, got %+v", evA)
+	}
+
+	_, eventsB, unsubscribeB := s.Subscribe()
+
+	// Both subscribers should be told the count is now 2.
+	evA2 := <-eventsA
+	if evA2.OnlineCount == nil || *evA2.OnlineCount != 2 {
+		t.Fatalf("expected online count 2, got %+v", evA2)
+	}
+	evB := <-eventsB
+	if evB.OnlineCount == nil || *evB.OnlineCount != 2 {
+		t.Fatalf("expected online count 2, got %+v", evB)
+	}
+
+	unsubscribeB()
+
+	evA3 := <-eventsA
+	if evA3.OnlineCount == nil || *evA3.OnlineCount != 1 {
+		t.Fatalf("expected online count 1 after unsubscribe, got %+v", evA3)
 	}
 }

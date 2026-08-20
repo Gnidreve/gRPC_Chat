@@ -31,19 +31,26 @@ type Message struct {
 	SentAt time.Time
 }
 
+// Event is one item delivered to a subscriber: either a Message or an
+// OnlineCount change, never both.
+type Event struct {
+	Message     *Message
+	OnlineCount *int
+}
+
 // Store is the in-memory chat room: known users, message history, and the
-// live subscribers currently streaming new messages.
+// live subscribers currently streaming events.
 type Store struct {
 	mu          sync.RWMutex
 	users       map[string]User
 	messages    []Message
-	subscribers map[string]chan Message
+	subscribers map[string]chan Event
 }
 
 func New() *Store {
 	return &Store{
 		users:       make(map[string]User),
-		subscribers: make(map[string]chan Message),
+		subscribers: make(map[string]chan Event),
 	}
 }
 
@@ -74,39 +81,61 @@ func (s *Store) AddMessage(userID, text string) (Message, error) {
 
 	msg := Message{User: user, Text: text, SentAt: time.Now()}
 	s.messages = append(s.messages, msg)
-
-	recipients := make([]chan Message, 0, len(s.subscribers))
-	for _, ch := range s.subscribers {
-		recipients = append(recipients, ch)
-	}
+	recipients := s.recipientsLocked()
 	s.mu.Unlock()
 
-	for _, ch := range recipients {
-		ch <- msg
-	}
+	broadcast(recipients, Event{Message: &msg})
 	return msg, nil
 }
 
-// Subscribe registers a new listener and returns a channel that receives
-// every message posted from this point on, plus an unsubscribe func that
-// must be called once the caller stops reading.
-func (s *Store) Subscribe() (<-chan Message, func()) {
+// Subscribe registers a new listener, bumps the online count (and notifies
+// every subscriber, including this one, of the new count), and returns:
+// the full message history so far, a channel that receives every event
+// from this point on, and an unsubscribe func that must be called once the
+// caller stops reading.
+func (s *Store) Subscribe() ([]Message, <-chan Event, func()) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	history := make([]Message, len(s.messages))
+	copy(history, s.messages)
 
 	id := newID()
-	ch := make(chan Message, 16)
+	ch := make(chan Event, 32)
 	s.subscribers[id] = ch
+	recipients := s.recipientsLocked()
+	count := len(s.subscribers)
+	s.mu.Unlock()
+
+	broadcast(recipients, Event{OnlineCount: &count})
 
 	unsubscribe := func() {
 		s.mu.Lock()
-		defer s.mu.Unlock()
 		if ch, ok := s.subscribers[id]; ok {
 			delete(s.subscribers, id)
 			close(ch)
 		}
+		recipients := s.recipientsLocked()
+		count := len(s.subscribers)
+		s.mu.Unlock()
+
+		broadcast(recipients, Event{OnlineCount: &count})
 	}
-	return ch, unsubscribe
+	return history, ch, unsubscribe
+}
+
+// recipientsLocked snapshots the current subscriber channels. Callers must
+// hold s.mu.
+func (s *Store) recipientsLocked() []chan Event {
+	recipients := make([]chan Event, 0, len(s.subscribers))
+	for _, ch := range s.subscribers {
+		recipients = append(recipients, ch)
+	}
+	return recipients
+}
+
+func broadcast(recipients []chan Event, ev Event) {
+	for _, ch := range recipients {
+		ch <- ev
+	}
 }
 
 func newID() string {
