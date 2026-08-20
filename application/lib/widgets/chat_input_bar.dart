@@ -1,12 +1,32 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Eingabezeile am unteren Bildschirmrand.
-/// Rein visuelles Template: kein State, kein Senden-Callback.
-/// TODO: TextEditingController + onSend-Callback ergänzen, sobald
-/// die eigentliche Chat-Logik angebunden wird.
-class ChatInputBar extends StatelessWidget {
-  const ChatInputBar({super.key});
+/// Eingabezeile am unteren Bildschirmrand. Ruft [onSend] mit dem
+/// getrimmten Text auf und leert das Feld danach.
+class ChatInputBar extends StatefulWidget {
+  final ValueChanged<String> onSend;
+
+  const ChatInputBar({super.key, required this.onSend});
+
+  @override
+  State<ChatInputBar> createState() => _ChatInputBarState();
+}
+
+class _ChatInputBarState extends State<ChatInputBar> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    widget.onSend(text);
+    _controller.clear();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,8 +51,11 @@ class ChatInputBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(100),
                 border: Border.all(color: AppColors.border),
               ),
-              child: const TextField(
-                decoration: InputDecoration(
+              child: TextField(
+                controller: _controller,
+                onSubmitted: (_) => _submit(),
+                textInputAction: TextInputAction.send,
+                decoration: const InputDecoration(
                   hintText: 'Nachricht',
                   hintStyle: TextStyle(
                     color: AppColors.textSecondary,
@@ -42,7 +65,7 @@ class ChatInputBar extends StatelessWidget {
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(vertical: 10),
                 ),
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 14.5,
                 ),
@@ -50,9 +73,7 @@ class ChatInputBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          _SendButton(onPressed: () {
-            // TODO: Sende-Logik anbinden.
-          }),
+          _SendButton(onPressed: _submit),
         ],
       ),
     );

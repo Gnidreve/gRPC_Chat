@@ -18,6 +18,32 @@ class AppColors {
   static const bubbleOwnText = Color(0xFFFFFFFF);
   static const bubbleOther = Color(0xFFF4F4F5);
   static const bubbleOtherText = Color(0xFF111113);
+
+  /// Fixed palette users pick their own color from on first launch.
+  static const userColors = [
+    Color(0xFF12B76A),
+    Color(0xFFF04438),
+    Color(0xFFF79009),
+    Color(0xFF7A5AF8),
+    Color(0xFF0BA5EC),
+    Color(0xFFEE46BC),
+    Color(0xFF84CC16),
+    Color(0xFFF97066),
+  ];
+}
+
+extension AppColorHex on Color {
+  /// "#RRGGBB", the wire format sent to and received from the server.
+  String toHex() =>
+      '#${(toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+}
+
+/// Parses a "#RRGGBB" string as sent by the server. Falls back to
+/// [AppColors.textSecondary] for anything malformed.
+Color colorFromHex(String hex) {
+  final cleaned = hex.replaceFirst('#', '');
+  final value = int.tryParse('ff$cleaned', radix: 16);
+  return value == null ? AppColors.textSecondary : Color(value);
 }
 
 class AppRadius {

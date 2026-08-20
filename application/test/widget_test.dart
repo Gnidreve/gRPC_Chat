@@ -1,14 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:grpc_chat/main.dart';
 
 void main() {
-  testWidgets('ChatApp shows the chat screen with demo messages',
+  testWidgets('ChatApp asks for a nickname and color on first launch',
       (WidgetTester tester) async {
-    await tester.pumpWidget(const ChatApp());
+    SharedPreferences.setMockInitialValues({});
 
-    expect(find.text('Chat'), findsOneWidget);
-    expect(find.text('14 online'), findsOneWidget);
-    expect(find.text('Hey, seid ihr schon am Set?'), findsOneWidget);
+    await tester.pumpWidget(const ChatApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Willkommen'), findsOneWidget);
+    expect(find.text('Nickname'), findsOneWidget);
   });
 }

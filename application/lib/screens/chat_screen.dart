@@ -1,14 +1,69 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import '../models/chat_message.dart';
+
+import '../services/chat_client.dart';
 import '../theme/app_theme.dart';
 import '../widgets/chat_input_bar.dart';
 import '../widgets/message_bubble.dart';
-import '../widgets/online_indicator.dart';
 
-/// Einziger Screen der App: Top Bar, Online-Indikator, Nachrichtenliste,
-/// Input-Bar. Nutzt statische Demo-Daten aus chat_message.dart.
-class ChatScreen extends StatelessWidget {
-  const ChatScreen({super.key});
+/// Einziger Chat-Screen: Top Bar, Nachrichtenliste, Input-Bar. Abonniert
+/// den Server-Stream über [chatClient] und zeigt Nachrichten live an.
+class ChatScreen extends StatefulWidget {
+  final ChatClient chatClient;
+  final User me;
+
+  const ChatScreen({super.key, required this.chatClient, required this.me});
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  final _messages = <ChatMessage>[];
+  final _scrollController = ScrollController();
+  StreamSubscription<ChatMessage>? _subscription;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = widget.chatClient.subscribe(widget.me.id).listen(
+      (message) {
+        setState(() => _messages.add(message));
+        _scrollToBottom();
+      },
+      onError: (Object error) {
+        setState(() => _error = 'Verbindung verloren: $error');
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  Future<void> _send(String text) async {
+    try {
+      await widget.chatClient.sendMessage(widget.me.id, text);
+    } catch (e) {
+      setState(() => _error = 'Nachricht konnte nicht gesendet werden');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,18 +72,23 @@ class ChatScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            _TopBar(),
-            const OnlineIndicator(count: 14),
+            const _TopBar(),
+            if (_error != null) _ErrorBanner(text: _error!),
             Expanded(
               child: ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
-                itemCount: demoMessages.length,
+                itemCount: _messages.length,
                 itemBuilder: (context, index) {
-                  return MessageBubble(message: demoMessages[index]);
+                  final message = _messages[index];
+                  return MessageBubble(
+                    message: message,
+                    isOwn: message.user.id == widget.me.id,
+                  );
                 },
               ),
             ),
-            const ChatInputBar(),
+            ChatInputBar(onSend: _send),
           ],
         ),
       ),
@@ -37,6 +97,8 @@ class ChatScreen extends StatelessWidget {
 }
 
 class _TopBar extends StatelessWidget {
+  const _TopBar();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -53,6 +115,25 @@ class _TopBar extends StatelessWidget {
           letterSpacing: -0.2,
           color: AppColors.textPrimary,
         ),
+      ),
+    );
+  }
+}
+
+class _ErrorBanner extends StatelessWidget {
+  final String text;
+
+  const _ErrorBanner({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: AppColors.bgSurface,
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
       ),
     );
   }
