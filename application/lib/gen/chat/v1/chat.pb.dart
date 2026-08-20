@@ -104,11 +104,13 @@ class ChatMessage extends $pb.GeneratedMessage {
     User? user,
     $core.String? text,
     $1.Timestamp? sentAt,
+    $core.int? distanceKm,
   }) {
     final result = create();
     if (user != null) result.user = user;
     if (text != null) result.text = text;
     if (sentAt != null) result.sentAt = sentAt;
+    if (distanceKm != null) result.distanceKm = distanceKm;
     return result;
   }
 
@@ -129,6 +131,7 @@ class ChatMessage extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'text')
     ..aOM<$1.Timestamp>(3, _omitFieldNames ? '' : 'sentAt',
         subBuilder: $1.Timestamp.create)
+    ..aI(4, _omitFieldNames ? '' : 'distanceKm')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -180,6 +183,20 @@ class ChatMessage extends $pb.GeneratedMessage {
   void clearSentAt() => $_clearField(3);
   @$pb.TagNumber(3)
   $1.Timestamp ensureSentAt() => $_ensure(2);
+
+  /// Rounded straight-line distance in kilometers from the recipient's
+  /// location (given in SubscribeRequest) to where this message was sent
+  /// from. Computed server-side via Haversine so raw coordinates never
+  /// leave the server. Absent for the recipient's own messages, and for
+  /// messages that predate this field (no stored location).
+  @$pb.TagNumber(4)
+  $core.int get distanceKm => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set distanceKm($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasDistanceKm() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearDistanceKm() => $_clearField(4);
 }
 
 class JoinRequest extends $pb.GeneratedMessage {
@@ -320,10 +337,14 @@ class SendMessageRequest extends $pb.GeneratedMessage {
   factory SendMessageRequest({
     $core.String? userId,
     $core.String? text,
+    $core.double? lat,
+    $core.double? lng,
   }) {
     final result = create();
     if (userId != null) result.userId = userId;
     if (text != null) result.text = text;
+    if (lat != null) result.lat = lat;
+    if (lng != null) result.lng = lng;
     return result;
   }
 
@@ -342,6 +363,8 @@ class SendMessageRequest extends $pb.GeneratedMessage {
       createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'text')
+    ..aD(3, _omitFieldNames ? '' : 'lat')
+    ..aD(4, _omitFieldNames ? '' : 'lng')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -380,6 +403,27 @@ class SendMessageRequest extends $pb.GeneratedMessage {
   $core.bool hasText() => $_has(1);
   @$pb.TagNumber(2)
   void clearText() => $_clearField(2);
+
+  /// Sender's current location, tagged onto the stored message so other
+  /// participants' distance to it can be computed. Required (Proximity
+  /// Chat is location-based) — omitting both rejects the call.
+  @$pb.TagNumber(3)
+  $core.double get lat => $_getN(2);
+  @$pb.TagNumber(3)
+  set lat($core.double value) => $_setDouble(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasLat() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearLat() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.double get lng => $_getN(3);
+  @$pb.TagNumber(4)
+  set lng($core.double value) => $_setDouble(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasLng() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearLng() => $_clearField(4);
 }
 
 class SendMessageResponse extends $pb.GeneratedMessage {
@@ -442,9 +486,13 @@ class SendMessageResponse extends $pb.GeneratedMessage {
 class SubscribeRequest extends $pb.GeneratedMessage {
   factory SubscribeRequest({
     $core.String? userId,
+    $core.double? lat,
+    $core.double? lng,
   }) {
     final result = create();
     if (userId != null) result.userId = userId;
+    if (lat != null) result.lat = lat;
+    if (lng != null) result.lng = lng;
     return result;
   }
 
@@ -462,6 +510,8 @@ class SubscribeRequest extends $pb.GeneratedMessage {
       package: const $pb.PackageName(_omitMessageNames ? '' : 'chat.v1'),
       createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
+    ..aD(2, _omitFieldNames ? '' : 'lat')
+    ..aD(3, _omitFieldNames ? '' : 'lng')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -491,6 +541,27 @@ class SubscribeRequest extends $pb.GeneratedMessage {
   $core.bool hasUserId() => $_has(0);
   @$pb.TagNumber(1)
   void clearUserId() => $_clearField(1);
+
+  /// Caller's current location — the fixed reference point used to compute
+  /// distance_km for every message on this stream (history replay and live
+  /// events alike) for the lifetime of this Subscribe call. Required.
+  @$pb.TagNumber(2)
+  $core.double get lat => $_getN(1);
+  @$pb.TagNumber(2)
+  set lat($core.double value) => $_setDouble(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasLat() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearLat() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.double get lng => $_getN(2);
+  @$pb.TagNumber(3)
+  set lng($core.double value) => $_setDouble(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasLng() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearLng() => $_clearField(3);
 }
 
 /// How many participants currently have a live Subscribe stream open.

@@ -31,11 +31,22 @@ type User struct {
 	Color    string
 }
 
-// Message is a single plain-text chat message.
+// Message is a single plain-text chat message, tagged with where it was
+// sent from.
 type Message struct {
 	User   User
 	Text   string
 	SentAt time.Time
+	Lat    float64
+	Lng    float64
+}
+
+// HasLocation reports whether m carries a real location. Exact (0, 0) is
+// treated as "no location" — an all-zero Message value (e.g. one persisted
+// before this field existed) round-trips to that, and it's a real-world
+// coordinate implausible enough (open ocean) to use as the sentinel.
+func (m Message) HasLocation() bool {
+	return m.Lat != 0 || m.Lng != 0
 }
 
 // Event is one item delivered to a subscriber: either a Message or an
@@ -95,7 +106,7 @@ func (s *Store) Join(id, nickname, color string) User {
 
 // AddMessage appends a message from userID to the history and delivers it
 // to every active subscriber. Returns ErrUnknownUser if userID never joined.
-func (s *Store) AddMessage(ctx context.Context, userID, text string) (Message, error) {
+func (s *Store) AddMessage(ctx context.Context, userID, text string, lat, lng float64) (Message, error) {
 	s.mu.RLock()
 	user, ok := s.users[userID]
 	s.mu.RUnlock()
@@ -103,7 +114,7 @@ func (s *Store) AddMessage(ctx context.Context, userID, text string) (Message, e
 		return Message{}, ErrUnknownUser
 	}
 
-	msg := Message{User: user, Text: text, SentAt: time.Now()}
+	msg := Message{User: user, Text: text, SentAt: time.Now(), Lat: lat, Lng: lng}
 	// Persist before broadcasting: a subscriber must never see a live event
 	// for a message that then turns out to be missing from history on
 	// reconnect.

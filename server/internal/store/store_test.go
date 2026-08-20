@@ -52,7 +52,7 @@ func TestAddMessageUnknownUser(t *testing.T) {
 
 	s := newTestStore(t)
 
-	if _, err := s.AddMessage(context.Background(), "does-not-exist", "hi"); !errors.Is(err, ErrUnknownUser) {
+	if _, err := s.AddMessage(context.Background(), "does-not-exist", "hi", 0, 0); !errors.Is(err, ErrUnknownUser) {
 		t.Fatalf("expected ErrUnknownUser, got %v", err)
 	}
 }
@@ -72,7 +72,7 @@ func TestSubscribeReceivesMessage(t *testing.T) {
 	// The subscriber's own join broadcasts a presence event; drain it.
 	<-events
 
-	if _, err := s.AddMessage(context.Background(), user.ID, "hey"); err != nil {
+	if _, err := s.AddMessage(context.Background(), user.ID, "hey", 52.52, 13.405); err != nil {
 		t.Fatalf("AddMessage: %v", err)
 	}
 
@@ -94,7 +94,7 @@ func TestSubscribeReplaysHistory(t *testing.T) {
 	s := newTestStore(t)
 	user := s.Join("", "Mara", "#12B76A")
 
-	if _, err := s.AddMessage(context.Background(), user.ID, "before subscribing"); err != nil {
+	if _, err := s.AddMessage(context.Background(), user.ID, "before subscribing", 52.52, 13.405); err != nil {
 		t.Fatalf("AddMessage: %v", err)
 	}
 
@@ -178,5 +178,47 @@ func TestOnlineCount(t *testing.T) {
 	unsubscribeB()
 	if got := s.OnlineCount(); got != 0 {
 		t.Fatalf("expected online count 0 after all unsubscribed, got %d", got)
+	}
+}
+
+func TestAddMessageStoresLocation(t *testing.T) {
+	t.Parallel()
+
+	s := newTestStore(t)
+	user := s.Join("", "Mara", "#12B76A")
+
+	msg, err := s.AddMessage(context.Background(), user.ID, "hey", 52.52, 13.405)
+	if err != nil {
+		t.Fatalf("AddMessage: %v", err)
+	}
+	if msg.Lat != 52.52 || msg.Lng != 13.405 {
+		t.Fatalf("expected lat/lng 52.52/13.405, got %v/%v", msg.Lat, msg.Lng)
+	}
+	if !msg.HasLocation() {
+		t.Fatalf("expected HasLocation true for a message with real coordinates")
+	}
+
+	history, _, unsubscribe, err := s.Subscribe(context.Background())
+	if err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
+	defer unsubscribe()
+
+	if len(history) != 1 || history[0].Lat != 52.52 || history[0].Lng != 13.405 {
+		t.Fatalf("expected replayed history to keep lat/lng, got %+v", history)
+	}
+}
+
+func TestMessageHasLocation(t *testing.T) {
+	t.Parallel()
+
+	if (Message{}).HasLocation() {
+		t.Fatalf("expected zero-value Message to have no location")
+	}
+	if !(Message{Lat: 52.52}).HasLocation() {
+		t.Fatalf("expected a message with only Lat set to have a location")
+	}
+	if !(Message{Lng: 13.405}).HasLocation() {
+		t.Fatalf("expected a message with only Lng set to have a location")
 	}
 }
