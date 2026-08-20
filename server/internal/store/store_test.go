@@ -129,3 +129,30 @@ func TestSubscribePresenceCount(t *testing.T) {
 		t.Fatalf("expected online count 1 after unsubscribe, got %+v", evA3)
 	}
 }
+
+func TestOnlineCount(t *testing.T) {
+	t.Parallel()
+
+	s := New()
+
+	if got := s.OnlineCount(); got != 0 {
+		t.Fatalf("expected online count 0 before any subscriber, got %d", got)
+	}
+
+	_, _, unsubscribeA := s.Subscribe()
+	_, _, unsubscribeB := s.Subscribe()
+
+	if got := s.OnlineCount(); got != 2 {
+		t.Fatalf("expected online count 2, got %d", got)
+	}
+
+	unsubscribeA()
+	if got := s.OnlineCount(); got != 1 {
+		t.Fatalf("expected online count 1 after one unsubscribe, got %d", got)
+	}
+
+	unsubscribeB()
+	if got := s.OnlineCount(); got != 0 {
+		t.Fatalf("expected online count 0 after all unsubscribed, got %d", got)
+	}
+}

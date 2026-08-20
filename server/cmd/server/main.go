@@ -49,14 +49,24 @@ func run(logger *slog.Logger) error {
 		return fmt.Errorf("listen on %s: %w", addr, err)
 	}
 
+	st := store.New()
 	healthServer := health.NewServer()
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(recoveryUnaryInterceptor(logger), loggingUnaryInterceptor(logger)),
 		grpc.ChainStreamInterceptor(recoveryStreamInterceptor(logger), loggingStreamInterceptor(logger)),
 	)
-	chatv1.RegisterChatServiceServer(grpcServer, chatserver.New(store.New()))
+	chatv1.RegisterChatServiceServer(grpcServer, chatserver.New(st))
 	healthv1.RegisterHealthServer(grpcServer, healthServer)
 	healthServer.SetServingStatus("", healthv1.HealthCheckResponse_SERVING)
+
+	// GET /api/online-count is the one plain-HTTP, publicly reachable route
+	// alongside the gRPC service — served over Coolify's regular HTTPS proxy
+	// domain (unlike the chat traffic itself, which bypasses that proxy on a
+	// separate plaintext port, see application/lib/config/server_config.dart).
+	// Everything else falls through to the gRPC handler.
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/online-count", onlineCountHandler(st))
+	mux.Handle("/", grpcServer)
 
 	// Reverse proxies in front of this server (Coolify/Traefik) may speak
 	// plain HTTP/1.1 to the backend rather than HTTP/2. Serving h2c
@@ -67,7 +77,7 @@ func run(logger *slog.Logger) error {
 	protocols.SetUnencryptedHTTP2(true)
 	httpServer := &http.Server{
 		Addr:              addr,
-		Handler:           grpcServer,
+		Handler:           mux,
 		Protocols:         protocols,
 		ReadHeaderTimeout: readHeaderTimeout,
 	}

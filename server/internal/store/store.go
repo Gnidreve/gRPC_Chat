@@ -136,6 +136,14 @@ func (s *Store) Subscribe() ([]Message, <-chan Event, func()) {
 	return history, ch, unsubscribe
 }
 
+// OnlineCount returns the current number of active Subscribe streams. Safe
+// for concurrent use, including from an HTTP handler outside the gRPC layer.
+func (s *Store) OnlineCount() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.subscribers)
+}
+
 // recipientsLocked snapshots the current subscriber channels. Callers must
 // hold s.mu.
 func (s *Store) recipientsLocked() []chan Event {
