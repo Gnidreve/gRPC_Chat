@@ -1,0 +1,64 @@
+name: Build App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'application/**'
+      - '.github/workflows/build-app.yml'
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: application
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.1'
+          channel: 'stable'
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build apk --release
+
+      - name: Upload APK build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: grpc-chat-android-${{ github.run_number }}
+          path: application/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-${{ github.run_number }}
+          name: Android build ${{ github.run_number }}
+          files: application/build/app/outputs/flutter-apk/app-release.apk
+
+  ios-build-check:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: application
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.1'
+          channel: 'stable'
+          cache: true
+
+      - run: flutter pub get
+      # No Apple signing credentials are configured in this repo, so this
+      # only verifies the iOS build still compiles — it does not produce
+      # an installable .ipa. Add certificates/provisioning profiles as
+      # secrets and a codesigned `flutter build ipa` step to change that.
+      - run: flutter build ios --release --no-codesign

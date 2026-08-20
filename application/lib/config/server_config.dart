@@ -9,7 +9,7 @@
 class ServerConfig {
   ServerConfig._();
 
-  static const String host = '5plwpau6ymvvscimwhtsokxd.everding.solutions';
+  static const String host = '5plwpau6ymvvscimwhtsokxd.everding.it';
   static const int port = 443;
   static const bool useTls = true;
 }
