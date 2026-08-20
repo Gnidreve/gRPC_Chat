@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthv1 "google.golang.org/grpc/health/grpc_health_v1"
@@ -25,6 +26,8 @@ import (
 const (
 	readHeaderTimeout = 5 * time.Second
 	shutdownTimeout   = 15 * time.Second
+	redisPingTimeout  = 5 * time.Second
+	redisHistoryKey   = "chat:history"
 )
 
 func main() {
@@ -49,7 +52,13 @@ func run(logger *slog.Logger) error {
 		return fmt.Errorf("listen on %s: %w", addr, err)
 	}
 
-	st := store.New()
+	history, closeHistory, err := newHistory(logger)
+	if err != nil {
+		return err
+	}
+	defer closeHistory()
+
+	st := store.New(history)
 	healthServer := health.NewServer()
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(recoveryUnaryInterceptor(logger), loggingUnaryInterceptor(logger)),
@@ -110,4 +119,34 @@ func run(logger *slog.Logger) error {
 
 	logger.Info("chat server stopped")
 	return nil
+}
+
+// newHistory sets up the message history backend from CHAT_REDIS_URL. If
+// unset, message history falls back to in-memory (fine for local dev, but
+// lost on every restart). If set, connectivity is verified once here and
+// failure aborts startup — a configured-but-unreachable Redis fails loud
+// rather than silently degrading to in-memory and quietly losing history.
+// The returned closer must be deferred by the caller.
+func newHistory(logger *slog.Logger) (store.History, func(), error) {
+	redisURL := os.Getenv("CHAT_REDIS_URL")
+	if redisURL == "" {
+		logger.Warn("CHAT_REDIS_URL not set, message history is in-memory only and will not survive restarts")
+		return store.NewMemoryHistory(), func() {}, nil
+	}
+
+	opts, err := redis.ParseURL(redisURL)
+	if err != nil {
+		return nil, nil, fmt.Errorf("parse CHAT_REDIS_URL: %w", err)
+	}
+	client := redis.NewClient(opts)
+
+	pingCtx, cancel := context.WithTimeout(context.Background(), redisPingTimeout)
+	defer cancel()
+	if err := client.Ping(pingCtx).Err(); err != nil {
+		_ = client.Close()
+		return nil, nil, fmt.Errorf("connect to redis: %w", err)
+	}
+
+	logger.Info("message history backed by redis")
+	return store.NewRedisHistory(client, redisHistoryKey), func() { _ = client.Close() }, nil
 }

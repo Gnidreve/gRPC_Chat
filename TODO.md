@@ -9,7 +9,8 @@ erledigte Punkte sind abgehakt.
 
 - [ ] **Keine Authentifizierung — Identitäts-Spoofing möglich.** `Store.Join()` glaubt dem Client jede ID, jeden Nickname, jede Farbe blind. `User.id` wird in jeder Nachricht an alle Clients mitgeschickt (auch wenn die UI sie nicht anzeigt), daher kann sich jeder, der den Port erreicht, eine fremde ID schnappen und `SendMessage` damit aufrufen.
 - [x] ~~`broadcast()` in `server/internal/store/store.go` kann den ganzen Server blockieren.~~ Behoben (Skill-Audit, `golang-concurrency`): `broadcast()` sendet jetzt non-blocking (`select`/`default`) — ein hängender Subscriber verliert nur sein eigenes Event statt `AddMessage()`/`Subscribe()` für alle zu blockieren.
-- [x] ~~Unbegrenztes Speicherwachstum.~~ Behoben: `s.messages` ist jetzt auf `maxHistory = 500` gedeckelt (älteste Nachrichten werden verworfen, verbundene Clients behalten ihre bereits empfangene History).
+- [x] ~~Unbegrenztes Speicherwachstum.~~ Behoben: History ist auf `maxHistory = 500` gedeckelt (älteste Nachrichten werden verworfen, verbundene Clients behalten ihre bereits empfangene History).
+- [x] ~~Message-History geht bei jedem Redeploy verloren.~~ Behoben: History liegt jetzt in Redis (`server/internal/store/history_redis.go`), überlebt Prozess-Neustarts/Redeploys. User-Identität/Presence/Live-Broadcast bleiben bewusst in-memory (kein Skalierungsbedarf, ein Coolify-Container). Fällt ohne `CHAT_REDIS_URL` automatisch auf in-memory zurück (lokale Entwicklung); ist die Var gesetzt aber Redis nicht erreichbar, bricht der Start hart ab statt still auf in-memory zu degradieren. Mit echtem Redis-Neustart-Test verifiziert (Nachricht gesendet, Prozess gekillt, neuer Prozess gestartet, History war noch da).
 - [ ] **Server läuft unverschlüsselt (Plaintext-TCP, kein TLS).** Bewusste Übergangslösung, um das Coolify/Traefik-h2c-Problem zu umgehen — aktuell ist aller Chat-Traffic im Klartext unterwegs. `golang-grpc`-Skill: „TLS MUST be enabled in production" — weiterhin offen, keine sichere Lösung ohne Coolify-Proxy-Konfiguration in der Hand.
 
 ## Sollte man sich angucken
@@ -73,7 +74,6 @@ Insgesamt sauber und konsistent. Go-Seite: gute Trennung (`store`/`chatserver`/`
 
 ## Verbesserungsvorschläge für zukünftige Versionen
 
-- [ ] Redis-Migration (ohnehin geplant, jetzt weniger dringlich seit History gedeckelt ist, aber Speicherverlust bei jedem Redeploy bleibt)
 - [ ] Echtes TLS zum Server (Traefik-Label fixen oder TLS direkt im Go-Server via autocert)
 - [ ] Leichtgewichtige Auth (z.B. ein bei Join ausgestelltes Secret, bei folgenden Calls geprüft)
 - [ ] Rate-Limiting + Nachrichtenlängen-Limit serverseitig
