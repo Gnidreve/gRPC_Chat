@@ -38,18 +38,24 @@ class _AppGateState extends State<AppGate> {
       setState(() => _status = _Status.needsProfile);
       return;
     }
-    await _join(profile.nickname, colorFromHex(profile.color));
+    await _join(profile.id, profile.nickname, colorFromHex(profile.color));
   }
 
-  Future<void> _join(String nickname, Color color) async {
+  /// Used by [ProfileSetupScreen] for a brand-new profile: no persisted id
+  /// yet, so generate one now.
+  Future<void> _joinNew(String nickname, Color color) {
+    return _join(generateUserId(), nickname, color);
+  }
+
+  Future<void> _join(String id, String nickname, Color color) async {
     setState(() {
       _status = _Status.loading;
       _error = null;
     });
     try {
-      final user = await _chatClient.join(nickname, color.toHex());
+      final user = await _chatClient.join(id, nickname, color.toHex());
       await _profileStore.save(
-        UserProfile(nickname: nickname, color: color.toHex()),
+        UserProfile(id: id, nickname: nickname, color: color.toHex()),
       );
       setState(() {
         _me = user;
@@ -78,7 +84,7 @@ class _AppGateState extends State<AppGate> {
           body: Center(child: CircularProgressIndicator()),
         );
       case _Status.needsProfile:
-        return ProfileSetupScreen(onSubmit: _join);
+        return ProfileSetupScreen(onSubmit: _joinNew);
       case _Status.ready:
         return ChatScreen(chatClient: _chatClient, me: _me!);
       case _Status.error:

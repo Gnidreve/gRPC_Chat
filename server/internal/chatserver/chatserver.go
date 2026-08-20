@@ -25,7 +25,7 @@ func New(s *store.Store) *Server {
 }
 
 func (s *Server) Join(_ context.Context, req *chatv1.JoinRequest) (*chatv1.JoinResponse, error) {
-	user := s.store.Join(req.GetNickname(), req.GetColor())
+	user := s.store.Join(req.GetId(), req.GetNickname(), req.GetColor())
 	return &chatv1.JoinResponse{User: toProtoUser(user)}, nil
 }
 

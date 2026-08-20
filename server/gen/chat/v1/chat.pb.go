@@ -22,7 +22,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// A chat participant. The server assigns id on Join; nickname and color
+// A chat participant. The client generates and persists id locally (so it
+// survives app restarts) and sends it on every Join; nickname and color
 // are chosen by the user themselves and do not need to be unique or real.
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -147,8 +148,9 @@ func (x *ChatMessage) GetSentAt() *timestamppb.Timestamp {
 
 type JoinRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nickname      string                 `protobuf:"bytes,1,opt,name=nickname,proto3" json:"nickname,omitempty"`
-	Color         string                 `protobuf:"bytes,2,opt,name=color,proto3" json:"color,omitempty"` // hex color chosen by the user, e.g. "#12B76A"
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // client-generated, persisted locally across restarts
+	Nickname      string                 `protobuf:"bytes,2,opt,name=nickname,proto3" json:"nickname,omitempty"`
+	Color         string                 `protobuf:"bytes,3,opt,name=color,proto3" json:"color,omitempty"` // hex color chosen by the user, e.g. "#12B76A"
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -181,6 +183,13 @@ func (x *JoinRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use JoinRequest.ProtoReflect.Descriptor instead.
 func (*JoinRequest) Descriptor() ([]byte, []int) {
 	return file_chat_v1_chat_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *JoinRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
 }
 
 func (x *JoinRequest) GetNickname() string {
@@ -522,10 +531,11 @@ const file_chat_v1_chat_proto_rawDesc = "" +
 	"\vChatMessage\x12!\n" +
 	"\x04user\x18\x01 \x01(\v2\r.chat.v1.UserR\x04user\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x123\n" +
-	"\asent_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\"?\n" +
-	"\vJoinRequest\x12\x1a\n" +
-	"\bnickname\x18\x01 \x01(\tR\bnickname\x12\x14\n" +
-	"\x05color\x18\x02 \x01(\tR\x05color\"1\n" +
+	"\asent_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\"O\n" +
+	"\vJoinRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\bnickname\x18\x02 \x01(\tR\bnickname\x12\x14\n" +
+	"\x05color\x18\x03 \x01(\tR\x05color\"1\n" +
 	"\fJoinResponse\x12!\n" +
 	"\x04user\x18\x01 \x01(\v2\r.chat.v1.UserR\x04user\"A\n" +
 	"\x12SendMessageRequest\x12\x17\n" +
