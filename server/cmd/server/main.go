@@ -15,7 +15,7 @@ import (
 func main() {
 	addr := os.Getenv("CHAT_SERVER_ADDR")
 	if addr == "" {
-		addr = ":50051"
+		addr = ":3000" // matches the Coolify deployment's configured exposed port
 	}
 
 	lis, err := net.Listen("tcp", addr)

@@ -10,5 +10,5 @@ RUN CGO_ENABLED=0 go build -o /out/chat-server ./cmd/server
 FROM gcr.io/distroless/static-debian12
 COPY --from=build /out/chat-server /chat-server
 
-EXPOSE 50051
+EXPOSE 3000
 ENTRYPOINT ["/chat-server"]
