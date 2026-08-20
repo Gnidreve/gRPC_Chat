@@ -30,17 +30,14 @@ class OnlineIndicator extends StatelessWidget {
             Text.rich(
               TextSpan(
                 style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                   color: AppColors.textSecondary,
                 ),
                 children: [
                   TextSpan(
                     text: '$count',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: const TextStyle(color: AppColors.textPrimary),
                   ),
                   const TextSpan(text: ' online'),
                 ],
@@ -77,8 +74,8 @@ class _PulsingDotState extends State<_PulsingDot>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 17,
-      height: 17,
+      width: 24,
+      height: 24,
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, _) {
@@ -91,8 +88,8 @@ class _PulsingDotState extends State<_PulsingDot>
                 child: Transform.scale(
                   scale: 0.6 + t * 1.3,
                   child: Container(
-                    width: 7,
-                    height: 7,
+                    width: 10,
+                    height: 10,
                     decoration: const BoxDecoration(
                       color: AppColors.accentGreen,
                       shape: BoxShape.circle,
@@ -101,8 +98,8 @@ class _PulsingDotState extends State<_PulsingDot>
                 ),
               ),
               Container(
-                width: 7,
-                height: 7,
+                width: 10,
+                height: 10,
                 decoration: const BoxDecoration(
                   color: AppColors.accentGreen,
                   shape: BoxShape.circle,
