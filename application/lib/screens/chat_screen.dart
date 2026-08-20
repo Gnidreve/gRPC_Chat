@@ -24,11 +24,11 @@ class ChatScreen extends StatefulWidget {
 // app sits backgrounded for a while, so a killed Subscribe stream needs to
 // come back on its own instead of leaving the chat stuck on an error.
 const _reconnectDelays = [
+  Duration(milliseconds: 300),
   Duration(seconds: 1),
   Duration(seconds: 2),
   Duration(seconds: 4),
   Duration(seconds: 8),
-  Duration(seconds: 15),
 ];
 
 class _ChatScreenState extends State<ChatScreen> {
