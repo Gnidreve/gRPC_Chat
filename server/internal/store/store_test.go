@@ -1,8 +1,13 @@
 package store
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestJoinKeepsClientChosenNicknameAndColor(t *testing.T) {
+	t.Parallel()
+
 	s := New()
 
 	a := s.Join("", "Mara", "#12B76A")
@@ -20,6 +25,8 @@ func TestJoinKeepsClientChosenNicknameAndColor(t *testing.T) {
 }
 
 func TestJoinReusesClientProvidedID(t *testing.T) {
+	t.Parallel()
+
 	s := New()
 
 	first := s.Join("device-abc", "Mara", "#12B76A")
@@ -35,14 +42,18 @@ func TestJoinReusesClientProvidedID(t *testing.T) {
 }
 
 func TestAddMessageUnknownUser(t *testing.T) {
+	t.Parallel()
+
 	s := New()
 
-	if _, err := s.AddMessage("does-not-exist", "hi"); err != ErrUnknownUser {
+	if _, err := s.AddMessage("does-not-exist", "hi"); !errors.Is(err, ErrUnknownUser) {
 		t.Fatalf("expected ErrUnknownUser, got %v", err)
 	}
 }
 
 func TestSubscribeReceivesMessage(t *testing.T) {
+	t.Parallel()
+
 	s := New()
 	user := s.Join("", "Mara", "#12B76A")
 
@@ -69,6 +80,8 @@ func TestSubscribeReceivesMessage(t *testing.T) {
 }
 
 func TestSubscribeReplaysHistory(t *testing.T) {
+	t.Parallel()
+
 	s := New()
 	user := s.Join("", "Mara", "#12B76A")
 
@@ -85,6 +98,8 @@ func TestSubscribeReplaysHistory(t *testing.T) {
 }
 
 func TestSubscribePresenceCount(t *testing.T) {
+	t.Parallel()
+
 	s := New()
 
 	_, eventsA, unsubscribeA := s.Subscribe()

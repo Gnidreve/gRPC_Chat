@@ -14,8 +14,10 @@ import (
 )
 
 func TestJoinSendSubscribe(t *testing.T) {
+	t.Parallel()
+
 	lis := bufconn.Listen(1024 * 1024)
-	t.Cleanup(func() { lis.Close() })
+	t.Cleanup(func() { _ = lis.Close() })
 
 	grpcServer := grpc.NewServer()
 	chatv1.RegisterChatServiceServer(grpcServer, New(store.New()))
@@ -32,7 +34,7 @@ func TestJoinSendSubscribe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 
 	client := chatv1.NewChatServiceClient(conn)
 
@@ -87,8 +89,10 @@ func TestJoinSendSubscribe(t *testing.T) {
 }
 
 func TestSubscribeReplaysHistoryBeforeLiveEvents(t *testing.T) {
+	t.Parallel()
+
 	lis := bufconn.Listen(1024 * 1024)
-	t.Cleanup(func() { lis.Close() })
+	t.Cleanup(func() { _ = lis.Close() })
 
 	grpcServer := grpc.NewServer()
 	chatv1.RegisterChatServiceServer(grpcServer, New(store.New()))
@@ -105,7 +109,7 @@ func TestSubscribeReplaysHistoryBeforeLiveEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 
 	client := chatv1.NewChatServiceClient(conn)
 

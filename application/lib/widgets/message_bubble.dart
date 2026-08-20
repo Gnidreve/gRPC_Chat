@@ -16,7 +16,7 @@ class MessageBubble extends StatelessWidget {
       alignment: isOwn ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.78,
+          maxWidth: MediaQuery.sizeOf(context).width * 0.78,
         ),
         child: Padding(
           padding: const EdgeInsets.only(bottom: 10),

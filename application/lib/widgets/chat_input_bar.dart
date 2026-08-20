@@ -35,7 +35,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
         left: 12,
         right: 12,
         top: 10,
-        bottom: 10 + MediaQuery.of(context).padding.bottom,
+        bottom: 10 + MediaQuery.paddingOf(context).bottom,
       ),
       decoration: const BoxDecoration(
         color: AppColors.bgApp,
@@ -52,6 +52,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                 border: Border.all(color: AppColors.border),
               ),
               child: TextField(
+                key: const ValueKey('chat_message_field'),
                 controller: _controller,
                 onSubmitted: (_) => _submit(),
                 textInputAction: TextInputAction.send,
@@ -73,7 +74,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
             ),
           ),
           const SizedBox(width: 8),
-          _SendButton(onPressed: _submit),
+          _SendButton(key: const ValueKey('chat_send_button'), onPressed: _submit),
         ],
       ),
     );
@@ -83,7 +84,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
 class _SendButton extends StatelessWidget {
   final VoidCallback onPressed;
 
-  const _SendButton({required this.onPressed});
+  const _SendButton({super.key, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {

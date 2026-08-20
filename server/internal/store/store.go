@@ -16,6 +16,12 @@ import (
 // never joined (or was evicted).
 var ErrUnknownUser = errors.New("store: unknown user")
 
+// maxHistory bounds in-memory message retention so a long-running server
+// doesn't grow s.messages without limit. Once exceeded, the oldest messages
+// are dropped; connected clients keep them, only a fresh Subscribe() loses
+// the tail end of very old history.
+const maxHistory = 500
+
 // User is a chat participant: a server-assigned id, plus a nickname and
 // color the user picked themselves.
 type User struct {
@@ -47,6 +53,7 @@ type Store struct {
 	subscribers map[string]chan Event
 }
 
+// New returns an empty Store ready to accept Join/AddMessage/Subscribe calls.
 func New() *Store {
 	return &Store{
 		users:       make(map[string]User),
@@ -85,6 +92,9 @@ func (s *Store) AddMessage(userID, text string) (Message, error) {
 
 	msg := Message{User: user, Text: text, SentAt: time.Now()}
 	s.messages = append(s.messages, msg)
+	if len(s.messages) > maxHistory {
+		s.messages = s.messages[len(s.messages)-maxHistory:]
+	}
 	recipients := s.recipientsLocked()
 	s.mu.Unlock()
 
@@ -136,9 +146,17 @@ func (s *Store) recipientsLocked() []chan Event {
 	return recipients
 }
 
+// broadcast delivers ev to every recipient without blocking. A subscriber
+// whose buffered channel is full (i.e. its Subscribe stream is stalled, e.g.
+// a slow or dead network peer) has the event dropped for it rather than
+// stalling AddMessage/Subscribe for every other caller — the dropped
+// subscriber still recovers on reconnect via history replay.
 func broadcast(recipients []chan Event, ev Event) {
 	for _, ch := range recipients {
-		ch <- ev
+		select {
+		case ch <- ev:
+		default:
+		}
 	}
 }
 
