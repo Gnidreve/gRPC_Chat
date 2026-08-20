@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../services/chat_client.dart';
+import '../services/update_checker.dart';
 import '../services/user_profile_store.dart';
 import '../theme/app_theme.dart';
 import 'chat_screen.dart';
 import 'profile_setup_screen.dart';
+import 'update_screen.dart';
 
-/// App entry point: loads the locally stored profile (if any), joins the
-/// chat server with it, and only then shows [ChatScreen]. If no profile
-/// exists yet, [ProfileSetupScreen] collects one first.
+/// App entry point: checks for a mandatory update first (on every launch
+/// and every resume from background), then loads the locally stored
+/// profile (if any) and joins the chat server with it, showing
+/// [ChatScreen]. If no profile exists yet, [ProfileSetupScreen] collects
+/// one first.
 class AppGate extends StatefulWidget {
   const AppGate({super.key});
 
@@ -16,20 +20,58 @@ class AppGate extends StatefulWidget {
   State<AppGate> createState() => _AppGateState();
 }
 
-enum _Status { loading, needsProfile, ready, error }
+enum _Status { loading, updateRequired, needsProfile, ready, error }
 
-class _AppGateState extends State<AppGate> {
+class _AppGateState extends State<AppGate> with WidgetsBindingObserver {
   final _profileStore = UserProfileStore();
   final _chatClient = ChatClient();
+  final _updateChecker = UpdateChecker();
 
   _Status _status = _Status.loading;
+  AvailableUpdate? _update;
   User? _me;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _bootstrap();
+    WidgetsBinding.instance.addObserver(this);
+    _checkForUpdateThenBootstrap();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkForUpdate();
+    }
+  }
+
+  /// Runs on every launch: only proceeds to the normal profile/join flow
+  /// once no update is pending.
+  Future<void> _checkForUpdateThenBootstrap() async {
+    final update = await _updateChecker.check();
+    if (update != null) {
+      setState(() {
+        _update = update;
+        _status = _Status.updateRequired;
+      });
+      return;
+    }
+    await _bootstrap();
+  }
+
+  /// Runs on resume from background: only interrupts the current screen if
+  /// an update is actually found, otherwise leaves whatever's showing
+  /// alone.
+  Future<void> _checkForUpdate() async {
+    if (_status == _Status.updateRequired) return;
+    final update = await _updateChecker.check();
+    if (update != null && mounted) {
+      setState(() {
+        _update = update;
+        _status = _Status.updateRequired;
+      });
+    }
   }
 
   Future<void> _bootstrap() async {
@@ -71,6 +113,7 @@ class _AppGateState extends State<AppGate> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _chatClient.shutdown();
     super.dispose();
   }
@@ -83,6 +126,8 @@ class _AppGateState extends State<AppGate> {
           backgroundColor: AppColors.bgApp,
           body: Center(child: CircularProgressIndicator()),
         );
+      case _Status.updateRequired:
+        return UpdateScreen(update: _update!);
       case _Status.needsProfile:
         return ProfileSetupScreen(onSubmit: _joinNew);
       case _Status.ready:

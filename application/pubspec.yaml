@@ -39,6 +39,10 @@ dependencies:
   grpc: ^5.1.0
   protobuf: ^6.0.0
   shared_preferences: ^2.3.2
+  http: ^1.2.2
+  package_info_plus: ^8.1.2
+  path_provider: ^2.1.5
+  open_filex: ^4.5.0
 
 dev_dependencies:
   flutter_test:
