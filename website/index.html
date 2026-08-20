@@ -47,12 +47,63 @@
       padding: 24px;
     }
 
-    .dot {
-      width: 10px;
-      height: 10px;
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      visibility: hidden;
+    }
+
+    .status.ready {
+      visibility: visible;
+    }
+
+    .status strong {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .dot-wrap {
+      position: relative;
+      width: 17px;
+      height: 17px;
+      flex-shrink: 0;
+    }
+
+    .dot-wrap .pulse,
+    .dot-wrap .dot {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       border-radius: 50%;
       background: var(--accent-green);
-      margin-bottom: 24px;
+    }
+
+    .dot-wrap .dot {
+      width: 7px;
+      height: 7px;
+    }
+
+    .dot-wrap .pulse {
+      width: 7px;
+      height: 7px;
+      animation: pulse 2.2s ease-out infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: translate(-50%, -50%) scale(0.6);
+        opacity: 0.35;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1.9);
+        opacity: 0;
+      }
     }
 
     h1 {
@@ -107,7 +158,13 @@
 </head>
 <body>
   <main class="hero">
-    <div class="dot"></div>
+    <div class="status" id="status">
+      <div class="dot-wrap">
+        <div class="pulse"></div>
+        <div class="dot"></div>
+      </div>
+      <span><strong id="online-count">0</strong> online</span>
+    </div>
     <h1>Proximity Chat</h1>
     <p class="subtitle">
       Ein schneller, einfacher Chat für uns. Jeder kriegt eine Farbe, kein
@@ -126,5 +183,32 @@
     </a>
     <p class="hint">Aktuell nur für Android · APK von GitHub Releases</p>
   </main>
+
+  <script>
+    // Same server the app talks to (application/lib/config/server_config.dart),
+    // but over Coolify's regular HTTPS proxy domain rather than the direct
+    // plaintext TCP port the app uses for gRPC — plain JSON over HTTPS works
+    // fine through that proxy, no h2c workaround needed for this one route.
+    const ONLINE_COUNT_URL = 'https://5plwpau6ymvvscimwhtsokxd.everding.it/api/online-count';
+    const POLL_INTERVAL_MS = 15000;
+
+    async function refreshOnlineCount() {
+      try {
+        const response = await fetch(ONLINE_COUNT_URL, { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (typeof data.online !== 'number') return;
+
+        document.getElementById('online-count').textContent = data.online;
+        document.getElementById('status').classList.add('ready');
+      } catch {
+        // No network / server unreachable: keep showing the last known
+        // count (or stay hidden if we never got one) rather than error out.
+      }
+    }
+
+    refreshOnlineCount();
+    setInterval(refreshOnlineCount, POLL_INTERVAL_MS);
+  </script>
 </body>
 </html>
