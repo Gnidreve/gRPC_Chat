@@ -17,6 +17,16 @@ class ChatClient {
             credentials: ServerConfig.useTls
                 ? const ChannelCredentials.secure()
                 : const ChannelCredentials.insecure(),
+            // Actively probe the connection instead of waiting on a plain
+            // TCP timeout to notice it's dead (which can take much longer,
+            // especially right after the app resumes from background on
+            // mobile) — this is what makes Subscribe's onError/onDone fire
+            // promptly so the reconnect logic can kick in quickly.
+            keepAlive: const ClientKeepAliveOptions(
+              pingInterval: Duration(seconds: 15),
+              timeout: Duration(seconds: 5),
+              permitWithoutCalls: true,
+            ),
           ),
         ) {
     _stub = ChatServiceClient(_channel);
