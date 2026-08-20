@@ -4,6 +4,7 @@ package chatserver
 
 import (
 	"context"
+	"math"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -14,21 +15,27 @@ import (
 	"github.com/Gnidreve/gRPC_Chat/server/internal/store"
 )
 
+// Server implements the chat.v1.ChatService gRPC contract on top of a
+// store.Store.
 type Server struct {
 	chatv1.UnimplementedChatServiceServer
 
 	store *store.Store
 }
 
+// New returns a Server backed by the given store.
 func New(s *store.Store) *Server {
 	return &Server{store: s}
 }
 
+// Join registers or re-registers a user with the store.
 func (s *Server) Join(_ context.Context, req *chatv1.JoinRequest) (*chatv1.JoinResponse, error) {
 	user := s.store.Join(req.GetId(), req.GetNickname(), req.GetColor())
 	return &chatv1.JoinResponse{User: toProtoUser(user)}, nil
 }
 
+// SendMessage appends a message from the requesting user and broadcasts it
+// to subscribers.
 func (s *Server) SendMessage(_ context.Context, req *chatv1.SendMessageRequest) (*chatv1.SendMessageResponse, error) {
 	msg, err := s.store.AddMessage(req.GetUserId(), req.GetText())
 	if err != nil {
@@ -37,6 +44,7 @@ func (s *Server) SendMessage(_ context.Context, req *chatv1.SendMessageRequest) 
 	return &chatv1.SendMessageResponse{Message: toProtoMessage(msg)}, nil
 }
 
+// Subscribe streams message history followed by live events to the caller.
 func (s *Server) Subscribe(_ *chatv1.SubscribeRequest, stream chatv1.ChatService_SubscribeServer) error {
 	history, events, unsubscribe := s.store.Subscribe()
 	defer unsubscribe()
@@ -97,7 +105,17 @@ func toProtoEvent(ev store.Event) *chatv1.ChatEvent {
 	}
 	return &chatv1.ChatEvent{
 		Event: &chatv1.ChatEvent_Presence{
-			Presence: &chatv1.PresenceUpdate{OnlineCount: int32(*ev.OnlineCount)},
+			Presence: &chatv1.PresenceUpdate{OnlineCount: clampToInt32(*ev.OnlineCount)},
 		},
 	}
+}
+
+// clampToInt32 converts n to int32, clamping instead of silently wrapping if
+// it ever exceeds the range (subscriber counts stay tiny in practice, but a
+// silent wraparound to a negative online count would be a confusing bug).
+func clampToInt32(n int) int32 {
+	if n > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	return int32(n) //nolint:gosec // bounds-checked above; gosec's G115 can't see the guard
 }

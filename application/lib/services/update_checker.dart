@@ -71,25 +71,36 @@ class UpdateChecker {
     AvailableUpdate update, {
     required void Function(double progress) onProgress,
   }) async {
-    final request = http.Request('GET', Uri.parse(update.downloadUrl));
-    final response = await http.Client().send(request);
-    final total = response.contentLength ?? 0;
+    final client = http.Client();
+    try {
+      final request = http.Request('GET', Uri.parse(update.downloadUrl));
+      final response = await client.send(request);
+      if (response.statusCode != 200) {
+        throw HttpException(
+          'update download failed with status ${response.statusCode}',
+          uri: Uri.parse(update.downloadUrl),
+        );
+      }
+      final total = response.contentLength ?? 0;
 
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/proximity-chat-update.apk');
-    final sink = file.openWrite();
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/proximity-chat-update.apk');
+      final sink = file.openWrite();
 
-    var received = 0;
-    await for (final chunk in response.stream) {
-      sink.add(chunk);
-      received += chunk.length;
-      if (total > 0) onProgress(received / total);
+      var received = 0;
+      await for (final chunk in response.stream) {
+        sink.add(chunk);
+        received += chunk.length;
+        if (total > 0) onProgress(received / total);
+      }
+      await sink.close();
+
+      await OpenFilex.open(
+        file.path,
+        type: 'application/vnd.android.package-archive',
+      );
+    } finally {
+      client.close();
     }
-    await sink.close();
-
-    await OpenFilex.open(
-      file.path,
-      type: 'application/vnd.android.package-archive',
-    );
   }
 }

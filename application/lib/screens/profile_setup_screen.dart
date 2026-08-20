@@ -68,6 +68,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ),
                   const SizedBox(height: 28),
                   TextField(
+                    key: const ValueKey('profile_nickname_field'),
                     controller: _nicknameController,
                     autofocus: true,
                     onChanged: (_) => setState(() {}),
@@ -104,6 +105,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   SizedBox(
                     height: 46,
                     child: FilledButton(
+                      key: const ValueKey('profile_submit_button'),
                       onPressed: _canSubmit ? _submit : null,
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.bubbleOwn,
