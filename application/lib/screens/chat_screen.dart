@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../services/chat_client.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_sidebar.dart';
 import '../widgets/chat_input_bar.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/my_location_sheet.dart';
@@ -153,7 +154,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgApp,
+      appBar: AppBar(
+        backgroundColor: AppColors.bgApp,
+        foregroundColor: AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      drawer: const AppSidebar(),
+      // Material's default scrim is a fairly dark black54 — this app's
+      // whole look is intentionally light, so use a lighter, more subtle
+      // dimming behind the (still purely cosmetic) sidebar.
+      drawerScrimColor: Colors.black.withValues(alpha: 0.2),
+      // top: false — the AppBar above already sits below the status bar, so
+      // SafeArea only needs to guard the bottom (home indicator/gesture nav).
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
             OnlineIndicator(
