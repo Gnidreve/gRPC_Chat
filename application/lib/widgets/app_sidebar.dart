@@ -5,7 +5,7 @@ import '../theme/app_theme.dart';
 /// (per Hamburger-Icon oder Edge-Swipe-Geste), die Slide-Animation und das
 /// Overlay hinter der Sidebar kommen von Flutters eingebautem
 /// Scaffold/Drawer-Mechanismus (Material Best Practice) — hier wird nur das
-/// Aussehen angepasst (abgerundete obere Ecken).
+/// Aussehen angepasst (abgerundete Ecken oben-rechts und unten-links).
 class AppSidebar extends StatelessWidget {
   const AppSidebar({super.key});
 
@@ -15,8 +15,8 @@ class AppSidebar extends StatelessWidget {
       backgroundColor: AppColors.bgApp,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
+          bottomLeft: Radius.circular(20),
         ),
       ),
       child: const SizedBox.expand(),
